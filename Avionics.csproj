@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!--comment-->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="airports.json" />
+    <None Remove="mod.toml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="airports.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="mod.toml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lib.Harmony" Version="2.4.2" />
+    <PackageReference Include="StarMap.API" Version="0.2.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Brutal.Core.Common">
+      <HintPath>..\..\..\..\Program Files\Kitten Space Agency\Brutal.Core.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.Core.Numerics">
+      <HintPath>..\..\..\..\Program Files\Kitten Space Agency\Brutal.Core.Numerics.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.ImGui">
+      <HintPath>..\..\..\..\Program Files\Kitten Space Agency\Brutal.ImGui.dll</HintPath>
+    </Reference>
+    <Reference Include="KSA">
+      <HintPath>..\..\..\..\Program Files\Kitten Space Agency\KSA.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

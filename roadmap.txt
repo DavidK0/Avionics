@@ -1,0 +1,23 @@
+Post on Spacedock
+Improve HSI
+ * O/M/I markers
+ * Loc/GS capturing
+ * Add ETA
+ * Add bearing marker
+Add more flight instruments
+* Air Speed Indicator
+* Attitude Indicator
+* Altimeter
+* Vertical Speed Indicator
+* Heading Indicator
+* Turn Coordinator
+* Angle of Attack Indicator
+* Machmeter
+* ASL vs AGL instruments (radar altimeter)
+* Fuel gauge, flow indicator, and range estimator
+Autopilot
+Radio
+
+Things I probably won't add:
+* Tachometer / N1/N2 indicators
+* Manifold Pressure Gauge

@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <!--comment-->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -39,6 +40,9 @@
     </Reference>
     <Reference Include="KSA">
       <HintPath>..\..\..\..\Program Files\Kitten Space Agency\KSA.dll</HintPath>
+    </Reference>
+    <Reference Include="ModMenu">
+      <HintPath>..\..\..\..\Program Files\Kitten Space Agency\Content\Avionics\ModMenu.Attributes.dll</HintPath>
     </Reference>
   </ItemGroup>
 

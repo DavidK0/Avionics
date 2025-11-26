@@ -2,6 +2,9 @@
 Avionics is a mod for Kitten Space Agency that adds a Horizontal Situation Indicator (HSI) that you can use to fly an ILS approach to the position of any airport in the world. This mod does *not* add airport models or runways to KSA; it only adds the navigation tools to get to where they would be.
 
 **Updated for KSA v2025.11.11.2924**
+
+<img width="230" height="200" alt="image" src="https://github.com/user-attachments/assets/4d4e3413-664b-4af4-aeb4-b19db5532b64" />
+
 ## How to install
 1. Install [StarMap](https://github.com/StarMapLoader/StarMap/)
    1. Download and unzip [the latest release of StarMap](https://github.com/StarMapLoader/StarMap/releases/latest)

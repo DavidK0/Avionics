@@ -1,9 +1,14 @@
-Post on Spacedock
+Update Spacedock poasting
+* Include instruction
+* Include links to source code and forum thread
+Improve Autopilot
+* Add more modes (heading hold, vertical speed hold, approach mode)
+* Add PID tuning options to the settings page
 Improve HSI
- * O/M/I markers
- * Loc/GS capturing
- * Add ETA
- * Add bearing marker
+* O/M/I markers
+* Loc/GS capturing
+* Add ETA
+* Add bearing marker
 Add more flight instruments
 * Air Speed Indicator
 * Attitude Indicator
@@ -15,7 +20,6 @@ Add more flight instruments
 * Machmeter
 * ASL vs AGL instruments (radar altimeter)
 * Fuel gauge, flow indicator, and range estimator
-Autopilot
 Radio
 
 Things I probably won't add:

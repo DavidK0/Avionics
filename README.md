@@ -2,8 +2,8 @@
 Avionics is a mod for Kitten Space Agency that adds airplane flight instruments. The current features are:
 * A Horizontal Situation Indicator (HSI)
 * An autopilot with altitude hold and airport navigation
-* The position of thousands of airports across the world, which work with the HSI and autopilot.
-This mod does *not* add airport models, runways, or airplanes to KSA; it only adds the navigation tools to get to where the aiports would be.
+* The positions of thousands of airports across the world, which work with the HSI and autopilot.
+This mod does *not* add airport models, runways, or airplanes to KSA; it only adds the navigation tools to get to where the airports would be.
 
 **Updated for KSA v2025.12.3.2971**
 

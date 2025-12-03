@@ -233,5 +233,129 @@ namespace Avionics {
             RenderGlideSlopeIndicator(pMin1, pMax1);
             RenderGlideSlopeIndicator(pMin2, pMax2);
         }
+        internal static unsafe void RenderVSI(ImDrawList* draw_list, float2 windowPos, float2 size, float verticalSpeedFpm) {
+            ImColor8 white = new ImColor8(255, 255, 255, 255);
+            ImColor8 green = new ImColor8(0, 255, 0, 255);
+
+            // Center and radius of the VSI
+            float2 center = new float2(
+                windowPos.X + size.X * 0.5f,
+                windowPos.Y + size.Y * 0.5f
+            );
+
+            float radius = MathF.Min(size.X, size.Y) * 0.45f;
+            float innerRadius = radius - 18f;
+
+            // Typical VSI range: ±2000 fpm (you can adjust if you want a larger range)
+            float maxVsFpm = 2000f;
+
+            // Clamp the indicated VS to the instrument range
+            float clampedVs = MathF.Max(-maxVsFpm, MathF.Min(maxVsFpm, verticalSpeedFpm));
+
+            // Dial bezel
+            ImDrawListExtensions.AddCircle(draw_list, center, radius, white, 0, 2f);
+
+            // Title
+            ImDrawListExtensions.AddText(draw_list, center - new float2(radius * 0.5f, radius * 0.95f), white, "VERTICAL SPEED");
+
+            // Helper: convert VS (fpm) to angle on the dial.
+            // We use a 270° sweep: -max at bottom-left, +max at bottom-right, 0 at top.
+            // Center angle at -90° (top), range ±135°.
+            float centerAngleRad = -0.5f * (float)Math.PI; // -90°
+            float maxAngleRad = 135f * ((float)Math.PI / 180.0f);
+
+            float VsToAngle(float vs) {
+                float t = vs / maxVsFpm;                  // -1..+1
+                t = MathF.Max(-1f, MathF.Min(1f, t));
+                return centerAngleRad + t * maxAngleRad;
+            }
+
+            // Tick marks every 500 fpm, major ticks at each 1000 fpm
+            for(int vs = -2000; vs <= 2000; vs += 500) {
+                float angle = VsToAngle(vs);
+                float cosA = MathF.Cos(angle);
+                float sinA = MathF.Sin(angle);
+
+                bool major = (vs % 1000) == 0;
+                float tickLen = major ? 14f : 8f;
+                float tickThickness = major ? 2f : 1f;
+
+                float2 pOuter = new float2(
+                    center.X + cosA * radius,
+                    center.Y + sinA * radius
+                );
+                float2 pInner = new float2(
+                    center.X + cosA * (radius - tickLen),
+                    center.Y + sinA * (radius - tickLen)
+                );
+
+                ImDrawListExtensions.AddLine(draw_list, pOuter, pInner, white, tickThickness);
+
+                // Numeric labels for the major ticks (except 0)
+                if(major && vs != 0) {
+                    float labelRadius = radius - 30f;
+                    float2 labelPos = new float2(
+                        center.X + cosA * labelRadius,
+                        center.Y + sinA * labelRadius
+                    );
+
+                    // Show in thousands: 0.5, 1, 1.5, 2 etc.
+                    float thousands = MathF.Abs(vs) / 1000f;
+                    string label = thousands.ToString("0.#");
+                    ImDrawListExtensions.AddText(draw_list, labelPos - new float2(6f, 6f), white, label);
+                }
+            }
+
+            // "UP" and "DOWN" labels on the right side of the dial
+            {
+                float upAngle = VsToAngle(+1500f);
+                float downAngle = VsToAngle(-1500f);
+
+                float labelR = radius - 45f;
+
+                float2 upPos = new float2(
+                    center.X + MathF.Cos(upAngle) * labelR,
+                    center.Y + MathF.Sin(upAngle) * labelR
+                );
+                float2 downPos = new float2(
+                    center.X + MathF.Cos(downAngle) * labelR,
+                    center.Y + MathF.Sin(downAngle) * labelR
+                );
+
+                ImDrawListExtensions.AddText(draw_list, upPos, white, "UP");
+                ImDrawListExtensions.AddText(draw_list, downPos, white, "DN");
+            }
+
+            // Needle
+            {
+                float needleAngle = VsToAngle(clampedVs);
+                float cosA = MathF.Cos(needleAngle);
+                float sinA = MathF.Sin(needleAngle);
+
+                float2 needleEnd = new float2(
+                    center.X + cosA * innerRadius,
+                    center.Y + sinA * innerRadius
+                );
+
+                // Slightly inset start point so the center knob covers the joint
+                float2 needleStart = new float2(
+                    center.X - cosA * 8f,
+                    center.Y - sinA * 8f
+                );
+
+                ImDrawListExtensions.AddLine(draw_list, needleStart, needleEnd, green, 3f);
+
+                // Center knob
+                ImDrawListExtensions.AddCircleFilled(draw_list, center, 5f, white);
+            }
+
+            // Digital readout at the bottom
+            {
+                string vsText = $"{(int)clampedVs} fpm";
+                float2 textPos = new float2(center.X - radius * 0.45f, center.Y + radius * 0.65f);
+                ImDrawListExtensions.AddText(draw_list, textPos, white, vsText);
+            }
+        }
+
     }
 }

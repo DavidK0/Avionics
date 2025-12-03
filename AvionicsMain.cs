@@ -1,9 +1,12 @@
 ﻿﻿using Brutal.ImGuiApi;
 using Brutal.Numerics;
 using KSA;
-using StarMap.API;
 using ModMenu;
+using StarMap.API;
+using System.Drawing;
+using System.Reflection.Emit;
 using System.Text.Json;
+using static Avionics.Autopilot;
 
 namespace Avionics
 {
@@ -29,6 +32,7 @@ namespace Avionics
         static bool runwaySelectionPageOn;
         static bool hsiPageOn;
         static bool autopilotPageOn;
+        static bool vsiPageOn;
 
         static double3 vehicleGPS;
 
@@ -57,6 +61,9 @@ namespace Avionics
             if(ImGui.MenuItem("HSI")) {
                 AvionicsMain.hsiPageOn = !AvionicsMain.hsiPageOn;
             }
+            if(ImGui.MenuItem("VSI")) {
+                AvionicsMain.vsiPageOn = !AvionicsMain.vsiPageOn;
+            }
         }
 
         [StarMapImmediateLoad]
@@ -79,6 +86,14 @@ namespace Avionics
             if(controlledVehicle == null) {
                 return;
             }
+            FlightComputer flightComputer = controlledVehicle.FlightComputer;
+
+            double3 positionCci = controlledVehicle.GetPositionCci();
+            double3 vector = positionCci.Normalized();
+            double vertical_speed = double3.Dot(controlledVehicle.GetVelocityCci(), vector);
+            //Console.WriteLine(controlledVehicle.GetSurfaceSpeed());
+            //Console.WriteLine($"Vertical Speed: {vertical_speed:F2} m/s")
+
             vehicleGPS = GetGPSPosition(controlledVehicle);
             string positionText = GetGPSPositionString(vehicleGPS);
             string bearingText = "No airport selected";
@@ -195,43 +210,53 @@ namespace Avionics
                 ImGui.Begin("Autopilot", ref AvionicsMain.autopilotPageOn, flags);
                 if(ImGui.Button(autopilot.engaged ? "Disengage Autopilot" : "Engage Autopilot")) {
                     if(autopilot.engaged) {
-                        autopilot.engaged = false;
+                        autopilot.Disengage();
                     } else {
                         autopilot.Engage();
                     }
                 }
-                ImGui.InputInt("Target Altitude (m)", ref autopilot.target_altitude);
-                FlightComputer computer = controlledVehicle.FlightComputer;
+                ImGui.Text($"Lateral Mode: {autopilot.lateralMode}");
+                if(ImGui.Button("HDG")) {
+                    autopilot.lateralMode = Autopilot.LateralMode.HeadingHold;
+                }
+                //ImGui.SameLine();
+                //if(ImGui.Button("APR")) { }
+                ImGui.SameLine();
+                if(ImGui.Button("NAV")) {
+                    autopilot.lateralMode = Autopilot.LateralMode.Nav;
+                }
+                ImGui.Text($"Vertical Mode: {autopilot.verticalMode}");
+                if(ImGui.Button("ALT")) {
+                    autopilot.target_altitude = (int)vehicleGPS.Z;
+                }
+                //ImGui.SameLine();
+                //if(ImGui.Button("VS")) { }
+                //ImGui.SameLine();
+                //if(ImGui.Button("VNav")) { }
+                ImGui.Text("Alt. Select");
+                if(ImGui.Button("-1km")) {
+                    autopilot.target_altitude -= 1000;
+                }
+                ImGui.SameLine();
+                if(ImGui.Button("+1km")) {
+                    autopilot.target_altitude += 1000;
+                }
+                ImGui.InputInt("+/- 100m", ref autopilot.target_altitude, 100);
+                ImGui.Text("VS Select");
+                ImGui.InputInt("m/s", ref autopilot.target_vs);
+
+;
 
 
-                //ImGui.InputFloat("Kp", ref PID.Kp);
-                //ImGui.InputFloat("Ki", ref PID.Ki);
-                //ImGui.InputFloat("Kd", ref PID.Kd);
+                // Update autopilot inputs
+                autopilot.current_vs = (float)vertical_speed;
+                autopilot.current_altitude = (float)vehicleGPS.Z;
+                Console.WriteLine(autopilot.GetDebugString());
 
-
-
-                double3 positionCci = controlledVehicle.GetPositionCci();
-                double3 vector = positionCci.Normalized();
-                double vertical_speed = double3.Dot(controlledVehicle.GetVelocityCci(), vector);
-                //Console.WriteLine(controlledVehicle.GetSurfaceSpeed());
-                //Console.WriteLine($"Vertical Speed: {vertical_speed:F2} m/s");
-
-                if(autopilot.engaged && selectedRunway != null) {
-
-                    // Update autopilot inputs
-                    autopilot.current_vs = (float)vertical_speed;
-                    autopilot.current_altitude = (float)vehicleGPS.Z;
-                    float pitch_target = autopilot.Update((float)dt);
-                    Console.WriteLine(autopilot.GetDebugString());
-
+                autopilot.Update(controlledVehicle, (float)dt, selectedRunway != null ? (float)selectedRunway.GetBearing(vehicleGPS) : null);
+                if(selectedRunway != null) {
                     float bearing = (float)selectedRunway.GetBearing(GetGPSPosition(controlledVehicle)) - (float)Math.PI / 2f;
-                    //float pitch = .2f;
-                    computer.CustomAttitudeTarget = new double3(.1f, pitch_target, bearing);
-                    computer.AttitudeTrackTarget = FlightComputerAttitudeTrackTarget.Custom;
-                    computer.AttitudeFrame = VehicleReferenceFrame.EnuBody;
-
-                } else {
-                    computer.CustomAttitudeTarget = new double3(0f, 0f, 0f);
+                    //autopilot.
                 }
 
                 ImGui.End();
@@ -247,15 +272,28 @@ namespace Avionics
                     float2 center = ImGui.GetWindowPos();
                     float2 size = ImGui.GetWindowSize();
 
-                    Astronomical parent = controlledVehicle.Orbit.Parent;
-                    Celestial celestial = (Celestial)controlledVehicle.Orbit.Parent;
-
 
                     FlightInstruments.RenderHSI(draw_list, center, size, (float)heading, selectedRunway, deviation, (float)runwayBearing, (float)runwayDistance, (float)slope);
                 }
                 ImGui.End();
-                ImGui.Render();
             }
+
+            // VSI page
+            if(AvionicsMain.vsiPageOn) {
+                ImGui.SetNextWindowSizeConstraints(new float2(300, 300), new float2(float.MaxValue, float.MaxValue));
+                ImGui.Begin("VSI", ref AvionicsMain.vsiPageOn, flags);
+                unsafe {
+                    ImDrawList* draw_list = ImGui.GetWindowDrawList();
+                    ImDrawList* draw_list1 = draw_list;
+                    float2 center = ImGui.GetWindowPos();
+                    float2 size = ImGui.GetWindowSize();
+
+                    FlightInstruments.RenderVSI(draw_list, center, size, (float)vertical_speed);
+                }
+                ImGui.End();
+                //ImGui.Render();
+            }
+            ImGui.Render();
         }
         // Return GPS position as (latitude [radians], longitude [radians], altitude [meters])
         public static double3 GetGPSPosition(Vehicle vehicle) {
@@ -543,10 +581,28 @@ namespace Avionics
     }
 
     public class Autopilot {
+        public enum VerticalMode {
+            AltitudeHold,
+            VerticalSpeed,
+            VNAV,
+            off
+        }
+        public enum LateralMode {
+            HeadingHold,
+            Approach,
+            Nav,
+            off
+        }
+
+        public Vehicle vehicle;
+
+        public VerticalMode verticalMode = VerticalMode.off;
+        public LateralMode lateralMode = LateralMode.off;
+
         public bool engaged = false;
 
         public float current_vs;
-        public int target_vs = 0;
+        public int target_vs = 10;
         public float commanded_vs = 0;
 
         public float current_altitude = 10000f;
@@ -555,8 +611,11 @@ namespace Avionics
         private PID vsPID;
         private PID altitudePID;
 
-        // Desired pitch command after altitude loop
-        private float desired_pitch_cmd;
+        public float commanded_pitch;
+        public float commanded_heading;
+        public float commanded_roll = 0f;
+
+        private float max_pitch_rad = 0.5f; // ~28.6 degrees
 
         public Autopilot() {
             vsPID = new PID(0.3f, 0f, 0.5f);
@@ -567,27 +626,81 @@ namespace Avionics
             vsPID.Reset();
             altitudePID.Reset();
             engaged = true;
+            verticalMode = VerticalMode.AltitudeHold;
+            lateralMode = LateralMode.HeadingHold;
         }
 
-        public float Update(float dt) {
-            // --- OUTER LOOP: Altitude PID produces a target vertical speed ---
-            float altitudeError = target_altitude - current_altitude;
-            commanded_vs = altitudePID.Update(altitudeError, dt);
+        public void Disengage() {
+            engaged = false;
+            verticalMode = VerticalMode.off;
+            lateralMode = LateralMode.off;
+        }
 
-            // Clamp commanded vertical speed to sane values
-            commanded_vs = Math.Clamp(commanded_vs, -10f, 10f); // adjust units & limits
+        public void Update(Vehicle v, float dt, float? bearing) {
+            vehicle = v;
+            FlightComputer flightComputer = vehicle.FlightComputer;
 
-            // --- INNER LOOP: VS PID produces pitch command ---
-            float vsError = commanded_vs - current_vs;
-            desired_pitch_cmd = vsPID.Update(vsError, dt);
+            target_vs = Math.Max(0, target_vs);
 
-            desired_pitch_cmd = Math.Clamp(desired_pitch_cmd, -0.5f, 0.5f);
+            if(engaged) {
+                // Set pitch
+                if(verticalMode == VerticalMode.AltitudeHold) {
+                    // --- OUTER LOOP: Altitude PID produces a target vertical speed ---
+                    float altitudeError = target_altitude - current_altitude;
+                    commanded_vs = altitudePID.Update(altitudeError, dt);
 
-            return desired_pitch_cmd;
+                    // Clamp commanded vertical speed to sane values
+                    commanded_vs = Math.Clamp(commanded_vs, -target_vs, target_vs);
+
+                    // --- INNER LOOP: VS PID produces pitch command ---
+                    float vsError = commanded_vs - current_vs;
+                    commanded_pitch = vsPID.Update(vsError, dt);
+
+                    commanded_pitch = Math.Clamp(commanded_pitch, -max_pitch_rad, max_pitch_rad);
+                } else if(verticalMode == VerticalMode.VerticalSpeed) {
+                    // Vertical speed mode
+                    // To be implemented
+                } else if(verticalMode == VerticalMode.VNAV) {
+                    // To be implemented
+                } else {
+                    // Off
+                    // I don't know how to less than all of the axes right now
+                }
+
+                    // Set heading
+                if(lateralMode == LateralMode.HeadingHold) {
+                    // Heading hold mode
+                    commanded_heading = (float)AvionicsMain.GetHeading(vehicle);
+                } else if(lateralMode == LateralMode.Approach) {
+                    // Approach mode
+                    // To be implemented
+                    commanded_heading = (float)AvionicsMain.GetHeading(vehicle);
+                } else if(lateralMode == LateralMode.Nav) {
+                    // Nav mode
+                    if(bearing.HasValue) {
+                        commanded_heading = bearing.Value - (float)Math.PI / 2;
+                    } else {
+                        lateralMode = LateralMode.HeadingHold;
+                        commanded_heading = (float)AvionicsMain.GetHeading(vehicle);
+                    }
+                } else {
+                    // Off
+                    // I don't know how to less than all of the axes right now
+                    commanded_heading = (float)AvionicsMain.GetHeading(vehicle);
+                }
+
+                flightComputer.CustomAttitudeTarget = new double3(commanded_roll, commanded_pitch, commanded_heading);
+                flightComputer.AttitudeTrackTarget = FlightComputerAttitudeTrackTarget.Custom;
+                flightComputer.AttitudeFrame = VehicleReferenceFrame.EnuBody;
+            } else {
+                flightComputer.CustomAttitudeTarget = new double3(0f, 0f, 0f);
+            }
+
         }
 
         public string GetDebugString() {
-            return $"{engaged}, {target_altitude}, {current_altitude}, {commanded_vs}, {current_vs}, {desired_pitch_cmd}, {vsPID.GetDebugString()}, {altitudePID.GetDebugString()}";
+            string vehicleString = vehicle != null ? vehicle.FlightComputer.CustomAttitudeTarget.ToString() : "";
+            return $"{engaged}, {target_altitude}, {(int)current_altitude}, {commanded_vs:.2f}, {current_vs:.2f}, {vehicleString}";
         }
     }
 

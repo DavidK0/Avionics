@@ -2,7 +2,7 @@ Update Spacedock poasting
 * Include instruction
 * Include links to source code and forum thread
 Improve Autopilot
-* Add more modes (heading hold, vertical speed hold, approach mode)
+* Add more modes (vertical speed hold, approach mode)
 * Add PID tuning options to the settings page
 Improve HSI
 * O/M/I markers

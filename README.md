@@ -1,9 +1,14 @@
 # Avionics
-Avionics is a mod for Kitten Space Agency that adds a Horizontal Situation Indicator (HSI) that you can use to fly an ILS approach to the position of any airport in the world. This mod does *not* add airport models or runways to KSA; it only adds the navigation tools to get to where they would be.
+Avionics is a mod for Kitten Space Agency that adds airplane flight instruments. The current features are:
+* A Horizontal Situation Indicator (HSI)
+* An autopilot with altitude hold and airport navigation
+* The positions of thousands of airports across the world, which work with the HSI and autopilot.
 
-**Updated for KSA v2025.11.11.2924**
+This mod does *not* add airport models, runways, or airplanes to KSA; it only adds the navigation tools to get to where the airports would be.
 
-<img width="230" height="200" alt="image" src="https://github.com/user-attachments/assets/4d4e3413-664b-4af4-aeb4-b19db5532b64" />
+**Updated for KSA v2025.12.5.2976**
+
+<img width="423" height="255" alt="image" src="https://github.com/user-attachments/assets/ec43620b-8c37-4837-b506-b04c165ae32c" />
 
 ## How to install
 1. Install [StarMap](https://github.com/StarMapLoader/StarMap/)
@@ -46,5 +51,10 @@ enabled = true
 
 ## How to use in game
 1. Open the Avionics pages with the 'Avionics' button in the mod menu.
-1. Enter the ICAO code of an airport in the runway selection window and select a runway
-3. View the directions to the runway on the 'HSI' page.
+1. Enter the ICAO code of an airport in the 'Runway Selection' window and select a runway
+3. View the directions to the runway on the 'HSI' window.
+4. Enable autopilot in the 'Autopilot' window and set the target altitude.
+
+## Links
+* [Avionics on Ahwoo Forums](https://forums.ahwoo.com/threads/avionics.560/)
+* [Avionics on SpaceDock](https://spacedock.info/mod/4057/Avionics)

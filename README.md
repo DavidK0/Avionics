@@ -18,7 +18,7 @@ This mod does *not* add airport models, runways, or airplanes to KSA; it only ad
 2. Install [ModMenu](https://github.com/MrJeranimo/ModMenu/)
    1. Download and unzip [the latest release of ModMenu](https://github.com/MrJeranimo/ModMenu/releases/latest)
    2. Put the contents in `Kitten Space Agency\Content\`
-3. Download and unzip [the latest release of Avionics](https://github.com/DavidK0/Avionics/releases/latest)
+3. Download and unzip the latest release of Avionics [from Github](https://github.com/DavidK0/Avionics/releases/latest) or [from SpaceDock](https://spacedock.info/mod/4057/Avionics)
 4. Place the contents into `Kitten Space Agency\Content\`. Your content folder should look something like this:
 ```
 ├── Core

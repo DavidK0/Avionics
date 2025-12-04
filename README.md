@@ -63,3 +63,4 @@ enabled = true
 ## Links
 * [Avionics on Ahwoo Forums](https://forums.ahwoo.com/threads/avionics.560/)
 * [Avionics on SpaceDock](https://spacedock.info/mod/4057/Avionics)
+* [Demonstration on Youtube](https://youtu.be/QDrmacfHLlM)

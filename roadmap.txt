@@ -7,18 +7,16 @@ Improve HSI
 * Add ETA
 * Add bearing marker
 Add more flight instruments
+* Artificial Horizon
 * Air Speed Indicator
-* Attitude Indicator
-* Altimeter
-* Vertical Speed Indicator
 * Heading Indicator
 * Turn Coordinator
 * Angle of Attack Indicator
 * Machmeter
 * ASL vs AGL instruments (radar altimeter)
 * Fuel gauge, flow indicator, and range estimator
-Radio
+Add radio and ATC communications
 
-Things I probably won't add:
+Things I probably won't add unless they become relevant:
 * Tachometer / N1/N2 indicators
 * Manifold Pressure Gauge

@@ -1,12 +1,10 @@
-﻿﻿using Brutal.ImGuiApi;
+﻿
+using Brutal.ImGuiApi;
 using Brutal.Numerics;
 using KSA;
 using ModMenu;
 using StarMap.API;
-using System.Drawing;
-using System.Reflection.Emit;
 using System.Text.Json;
-using static Avionics.Autopilot;
 
 namespace Avionics
 {
@@ -28,11 +26,16 @@ namespace Avionics
         static ImInputString airport_text_buffer = new ImInputString(9);
         static float glide_slope_input = 3;
 
+
+        internal const float Rad2Deg = 180.0f / (float)Math.PI;
+        internal const float Deg2Rad = (float)Math.PI / 180.0f;
+
         // Pages
         static bool runwaySelectionPageOn;
         static bool hsiPageOn;
         static bool autopilotPageOn;
         static bool vsiPageOn;
+        static bool raPageOn;
 
         static double3 vehicleGPS;
 
@@ -44,11 +47,11 @@ namespace Avionics
 
             if(ImGui.BeginMenu("Unit")) {
                 if(ImGui.MenuItem("Kilometers")) {
-                    FlightInstruments.CurrentUnit = FlightInstruments.DistanceUnit.Kilometers;
-                } else if(ImGui.MenuItem("Miles")) {
-                    FlightInstruments.CurrentUnit = FlightInstruments.DistanceUnit.Miles;
+                    FlightInstruments.ChangeUnit(FlightInstruments.DistanceUnit.Kilometers);
+                } else if(ImGui.MenuItem("Statute Miles")) {
+                    FlightInstruments.ChangeUnit(FlightInstruments.DistanceUnit.StatuteMiles);
                 } else if(ImGui.MenuItem("Nautical Miles")) {
-                    FlightInstruments.CurrentUnit = FlightInstruments.DistanceUnit.NauticalMiles;
+                    FlightInstruments.ChangeUnit(FlightInstruments.DistanceUnit.NauticalMiles);
                 }
                 ImGui.EndMenu();
             }
@@ -64,6 +67,9 @@ namespace Avionics
             if(ImGui.MenuItem("VSI")) {
                 AvionicsMain.vsiPageOn = !AvionicsMain.vsiPageOn;
             }
+            if(ImGui.MenuItem("Radar Altimeter")) {
+                AvionicsMain.raPageOn = !AvionicsMain.raPageOn;
+            }
         }
 
         [StarMapImmediateLoad]
@@ -74,6 +80,8 @@ namespace Avionics
                 PropertyNameCaseInsensitive = true
             };
             airports = JsonSerializer.Deserialize<List<Airport>>(json, options);
+
+            FlightInstruments.OnChangeUnit += autopilot.ChangeUnit;
         }
 
         [StarMapAfterGui]
@@ -116,8 +124,8 @@ namespace Avionics
             string headingText = GetHeadingString(heading);
 
             if(selectedAirport != null) {
-                double target_lat_rad = Deg2Rad(selectedAirport.Latitude_deg);
-                double target_lon_rad = Deg2Rad(selectedAirport.longitude_deg);
+                double target_lat_rad = Deg2Rad * selectedAirport.Latitude_deg;
+                double target_lon_rad = Deg2Rad *selectedAirport.longitude_deg;
                 double3 targetGPS = new double3(target_lat_rad, target_lon_rad, 0);
                 airportTargetGPSText = GetGPSPositionString(targetGPS);
 
@@ -148,7 +156,7 @@ namespace Avionics
                 angleText = FlightInstruments.RadToString((float)slope);
                 swapRunwayDirectionButtonText = "Swap runway direction";
 
-                selectedRunway.glideSlope = glide_slope_input;
+                selectedRunway.glideSlopeRad = Deg2Rad * glide_slope_input;
             }
 
             // Runway selection page
@@ -227,31 +235,46 @@ namespace Avionics
                 }
                 ImGui.Text($"Vertical Mode: {autopilot.verticalMode}");
                 if(ImGui.Button("ALT")) {
-                    autopilot.target_altitude = (int)vehicleGPS.Z;
+                    autopilot.target_altitude_m = (int)vehicleGPS.Z;
                 }
                 //ImGui.SameLine();
                 //if(ImGui.Button("VS")) { }
                 //ImGui.SameLine();
                 //if(ImGui.Button("VNav")) { }
                 ImGui.Text("Alt. Select");
-                if(ImGui.Button("-1km")) {
-                    autopilot.target_altitude -= 1000;
+                if(ImGui.Button($"-{autopilot.large_height_display_unit}")) {
+                    autopilot.target_altitude_display_value -= autopilot.large_height_display_unit;
                 }
                 ImGui.SameLine();
-                if(ImGui.Button("+1km")) {
-                    autopilot.target_altitude += 1000;
+                if(ImGui.Button($"-{autopilot.small_height_display_unit}")) {
+                    autopilot.target_altitude_display_value -= autopilot.small_height_display_unit;
                 }
-                ImGui.InputInt("+/- 100m", ref autopilot.target_altitude, 100);
+                ImGui.SameLine();
+                if(ImGui.Button($"+{autopilot.small_height_display_unit}")) {
+                    autopilot.target_altitude_display_value += autopilot.small_height_display_unit;
+                }
+                ImGui.SameLine();
+                if(ImGui.Button($"+{autopilot.large_height_display_unit}")) {
+                    autopilot.target_altitude_display_value += autopilot.large_height_display_unit;
+                }
+                string heightUnit = FlightInstruments.AltitudeToString(0f, 0, false, true).Replace("0 ", "");
+                ImGui.InputFloat(heightUnit + "##xx", ref autopilot.target_altitude_display_value);
+
                 ImGui.Text("VS Select");
-                ImGui.InputInt("m/s", ref autopilot.target_vs);
-
-;
-
+                if(ImGui.Button($"-{autopilot.vs_display_unit}##xx")) {
+                    autopilot.target_vs_display_value -= autopilot.vs_display_unit;
+                }
+                ImGui.SameLine();
+                if(ImGui.Button($"+{autopilot.vs_display_unit}##xx")) {
+                    autopilot.target_vs_display_value += autopilot.vs_display_unit;
+                }
+                string speedUnit = FlightInstruments.SpeedToString(0f, 0).Replace("0 ", "");
+                ImGui.InputFloat(speedUnit + "##xx", ref autopilot.target_vs_display_value);
 
                 // Update autopilot inputs
                 autopilot.current_vs = (float)vertical_speed;
                 autopilot.current_altitude = (float)vehicleGPS.Z;
-                Console.WriteLine(autopilot.GetDebugString());
+                //Console.WriteLine(autopilot.GetDebugString());
 
                 autopilot.Update(controlledVehicle, (float)dt, selectedRunway != null ? (float)selectedRunway.GetBearing(vehicleGPS) : null);
                 if(selectedRunway != null) {
@@ -272,8 +295,8 @@ namespace Avionics
                     float2 center = ImGui.GetWindowPos();
                     float2 size = ImGui.GetWindowSize();
 
-
-                    FlightInstruments.RenderHSI(draw_list, center, size, (float)heading, selectedRunway, deviation, (float)runwayBearing, (float)runwayDistance, (float)slope);
+                    HSI.Update((float)heading, selectedRunway, deviation, (float)runwayBearing, (float)runwayDistance, (float)slope);
+                    HSI.Render(draw_list, center, size);
                 }
                 ImGui.End();
             }
@@ -288,11 +311,28 @@ namespace Avionics
                     float2 center = ImGui.GetWindowPos();
                     float2 size = ImGui.GetWindowSize();
 
-                    FlightInstruments.RenderVSI(draw_list, center, size, (float)vertical_speed);
+                    VSI.Update((float)vertical_speed);
+                    VSI.Render(draw_list, center, size);
                 }
                 ImGui.End();
-                //ImGui.Render();
             }
+
+            // RA page
+            if(AvionicsMain.raPageOn) {
+                ImGui.SetNextWindowSizeConstraints(new float2(300, 300), new float2(float.MaxValue, float.MaxValue));
+                ImGui.Begin("Radar Altimeter", ref AvionicsMain.raPageOn, flags);
+                unsafe {
+                    ImDrawList* draw_list = ImGui.GetWindowDrawList();
+                    ImDrawList* draw_list1 = draw_list;
+                    float2 center = ImGui.GetWindowPos();
+                    float2 size = ImGui.GetWindowSize();
+
+                    RA.Update((float)controlledVehicle.GetRadarAltitude());
+                    RA.Render(draw_list, center, size);
+                }
+                ImGui.End();
+            }
+
             ImGui.Render();
         }
         // Return GPS position as (latitude [radians], longitude [radians], altitude [meters])
@@ -355,9 +395,6 @@ namespace Avionics
             return FlightInstruments.RadToString((float)bearing_rad);
         }
 
-        public static double Deg2Rad(double degrees) {
-            return degrees * (Math.PI / 180.0f);
-        }
         public static double GetDistance(double3 pos1, double3 pos2, double radius) {
             double dLat = pos2[0] - pos1[0];
             double dLon = pos2[1] - pos1[1];
@@ -380,8 +417,8 @@ namespace Avionics
             Airport best_airport = null;
             foreach(Airport airport in airports) {
                 if(airport.Runways.Count > 0) {
-                    double airport_lat_rad = Deg2Rad(airport.Latitude_deg);
-                    double airport_lon_rad = Deg2Rad(airport.longitude_deg);
+                    double airport_lat_rad = Deg2Rad * airport.Latitude_deg;
+                    double airport_lon_rad = Deg2Rad * airport.longitude_deg;
                     double3 airportGPS = new double3(airport_lat_rad, airport_lon_rad, 0.0);
                     double distance = GetDistance(GPSPos, airportGPS, 1.0); // actual radius does not matter for ranking distances
                     if(distance < best_dist) {
@@ -443,7 +480,7 @@ namespace Avionics
         public double He_Longitude_rad { get; set; }
         public double He_Elevation_m { get; set; }
         public bool Use_LE { get; set; }
-        public double glideSlope { get; set; }
+        public double glideSlopeRad { get; set; }
         public double3 GetGPS() {
             if(Use_LE) {
                 return new double3(Le_Latitude_rad, Le_Longitude_rad, Le_Elevation_m);
@@ -492,7 +529,7 @@ namespace Avionics
             return (float)angle_rad;
         }
         public double GetVerticalDeviation(double3 GPSPos, double radius) {
-            return GetCurrentVerticalAngle(GPSPos, radius) - glideSlope;
+            return GetCurrentVerticalAngle(GPSPos, radius) - glideSlopeRad;
         }
 
         public double GetLateralDeviation(double3 GPSPos, double heading) {
@@ -540,7 +577,7 @@ namespace Avionics
         public double GetVerticalDeviation_dist(double3 GPSPos, double radius) {
             double vertical_angle = GetCurrentVerticalAngle(GPSPos, radius);
             double base_dist = Math.Cos(vertical_angle) * AvionicsMain.GetDistance(GPSPos, GetGPS(), radius);
-            double correct_rise = Math.Tan(glideSlope) * base_dist;
+            double correct_rise = Math.Tan(glideSlopeRad) * base_dist;
             double current_rise = GPSPos.Z;
             return current_rise - correct_rise;
         }
@@ -580,128 +617,6 @@ namespace Avionics
         }
     }
 
-    public class Autopilot {
-        public enum VerticalMode {
-            AltitudeHold,
-            VerticalSpeed,
-            VNAV,
-            off
-        }
-        public enum LateralMode {
-            HeadingHold,
-            Approach,
-            Nav,
-            off
-        }
 
-        public Vehicle vehicle;
-
-        public VerticalMode verticalMode = VerticalMode.off;
-        public LateralMode lateralMode = LateralMode.off;
-
-        public bool engaged = false;
-
-        public float current_vs;
-        public int target_vs = 10;
-        public float commanded_vs = 0;
-
-        public float current_altitude = 10000f;
-        public int target_altitude;
-
-        private PID vsPID;
-        private PID altitudePID;
-
-        public float commanded_pitch;
-        public float commanded_heading;
-        public float commanded_roll = 0f;
-
-        private float max_pitch_rad = 0.5f; // ~28.6 degrees
-
-        public Autopilot() {
-            vsPID = new PID(0.3f, 0f, 0.5f);
-            altitudePID = new PID(0.1f, 0f, 0.2f);
-        }
-
-        public void Engage() {
-            vsPID.Reset();
-            altitudePID.Reset();
-            engaged = true;
-            verticalMode = VerticalMode.AltitudeHold;
-            lateralMode = LateralMode.HeadingHold;
-        }
-
-        public void Disengage() {
-            engaged = false;
-            verticalMode = VerticalMode.off;
-            lateralMode = LateralMode.off;
-        }
-
-        public void Update(Vehicle v, float dt, float? bearing) {
-            vehicle = v;
-            FlightComputer flightComputer = vehicle.FlightComputer;
-
-            target_vs = Math.Max(0, target_vs);
-
-            if(engaged) {
-                // Set pitch
-                if(verticalMode == VerticalMode.AltitudeHold) {
-                    // --- OUTER LOOP: Altitude PID produces a target vertical speed ---
-                    float altitudeError = target_altitude - current_altitude;
-                    commanded_vs = altitudePID.Update(altitudeError, dt);
-
-                    // Clamp commanded vertical speed to sane values
-                    commanded_vs = Math.Clamp(commanded_vs, -target_vs, target_vs);
-
-                    // --- INNER LOOP: VS PID produces pitch command ---
-                    float vsError = commanded_vs - current_vs;
-                    commanded_pitch = vsPID.Update(vsError, dt);
-
-                    commanded_pitch = Math.Clamp(commanded_pitch, -max_pitch_rad, max_pitch_rad);
-                } else if(verticalMode == VerticalMode.VerticalSpeed) {
-                    // Vertical speed mode
-                    // To be implemented
-                } else if(verticalMode == VerticalMode.VNAV) {
-                    // To be implemented
-                } else {
-                    // Off
-                    // I don't know how to less than all of the axes right now
-                }
-
-                    // Set heading
-                if(lateralMode == LateralMode.HeadingHold) {
-                    // Heading hold mode
-                    commanded_heading = (float)AvionicsMain.GetHeading(vehicle);
-                } else if(lateralMode == LateralMode.Approach) {
-                    // Approach mode
-                    // To be implemented
-                    commanded_heading = (float)AvionicsMain.GetHeading(vehicle);
-                } else if(lateralMode == LateralMode.Nav) {
-                    // Nav mode
-                    if(bearing.HasValue) {
-                        commanded_heading = bearing.Value - (float)Math.PI / 2;
-                    } else {
-                        lateralMode = LateralMode.HeadingHold;
-                        commanded_heading = (float)AvionicsMain.GetHeading(vehicle);
-                    }
-                } else {
-                    // Off
-                    // I don't know how to less than all of the axes right now
-                    commanded_heading = (float)AvionicsMain.GetHeading(vehicle);
-                }
-
-                flightComputer.CustomAttitudeTarget = new double3(commanded_roll, commanded_pitch, commanded_heading);
-                flightComputer.AttitudeTrackTarget = FlightComputerAttitudeTrackTarget.Custom;
-                flightComputer.AttitudeFrame = VehicleReferenceFrame.EnuBody;
-            } else {
-                flightComputer.CustomAttitudeTarget = new double3(0f, 0f, 0f);
-            }
-
-        }
-
-        public string GetDebugString() {
-            string vehicleString = vehicle != null ? vehicle.FlightComputer.CustomAttitudeTarget.ToString() : "";
-            return $"{engaged}, {target_altitude}, {(int)current_altitude}, {commanded_vs:.2f}, {current_vs:.2f}, {vehicleString}";
-        }
-    }
 
 }

@@ -2,11 +2,11 @@
 using Brutal.Numerics;
 
 namespace Avionics {
-    internal class RA {
+    internal class RadarAltimeter {
         // Geometry
         static private float radius = 100f;
         static private float innerRadius = radius - 20f;
-        static private float maxAngleRad = 135f * AvionicsMain.Deg2Rad; // ±135° sweep
+        static private float maxAngleRad = 135f * Geomath.Deg2Rad; // ±135° sweep
 
         // Scale
         const float FeetPerMeter = 3.28084f;
@@ -18,16 +18,16 @@ namespace Avionics {
         static private float needleAltFeet;   // clamped value for the needle
         static private string altText = "0 FT";
 
-        public RA() {
+        public RadarAltimeter() {
             // Constructor logic here
         }
 
         public static void Update(float radarAltitude_m) {
             // Digital readout – show the actual value, limited to non-negative
-            altText = FlightInstruments.AltitudeToString(radarAltitude_m, 0);
+            altText = UnitControler.AltitudeToString(radarAltitude_m, 0);
 
 
-            if(FlightInstruments.CurrentUnit == FlightInstruments.DistanceUnit.Kilometers) {
+            if(UnitControler.CurrentUnit == UnitControler.UnitSystem.Kilometers) {
                 MaxAltMeter = 20000f;
             } else {
                 MaxAltMeter = 18288;
@@ -104,7 +104,7 @@ namespace Avionics {
                         center.Y + sinA * labelRadius
                     );
 
-                    string label = FlightInstruments.AltitudeToString(alt, 0, true);
+                    string label = UnitControler.AltitudeToString(alt, 0, true);
                     ImDrawListExtensions.AddText(draw_list, labelPos - new float2(10f, 6f), white, label);
                 }
             }

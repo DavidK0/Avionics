@@ -2,23 +2,23 @@
 using Brutal.Numerics;
 
 namespace Avionics {
-    internal class VSI {
+    internal class VerticalSpeedIndicator {
         static private float radius = 100f;
         static private float innerRadius = radius - 18f;
-        static private float maxAngleRad = 135f * AvionicsMain.Deg2Rad;
+        static private float maxAngleRad = 135f * Geomath.Deg2Rad;
         static float maxVsMps;
 
         static private string vsText;
         static private float clampedVs;
 
-        public VSI() {
+        public VerticalSpeedIndicator() {
             // Constructor logic here
         }
         public static void Update(float verticalSpeed_mps) {
-            vsText = FlightInstruments.SpeedToString(verticalSpeed_mps, 0);
+            vsText = UnitControler.SpeedToString(verticalSpeed_mps, 0);
 
 
-            if(FlightInstruments.CurrentUnit == FlightInstruments.DistanceUnit.Kilometers) {
+            if(UnitControler.CurrentUnit == UnitControler.UnitSystem.Kilometers) {
                 maxVsMps = 20f * 2f;
             } else {
                 maxVsMps = 20.32f * 2f;
@@ -77,7 +77,7 @@ namespace Avionics {
                     );
 
                     string label;
-                    if(FlightInstruments.CurrentUnit == FlightInstruments.DistanceUnit.Kilometers) {
+                    if(UnitControler.CurrentUnit == UnitControler.UnitSystem.Kilometers) {
                         // Show in m/s: 0.5, 1, 1.5, 2 etc.
                         float labelValue = MathF.Abs(vs);
                         label = labelValue.ToString("0.#");

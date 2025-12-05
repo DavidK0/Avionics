@@ -2,7 +2,7 @@
 using Brutal.Numerics;
 
 namespace Avionics {
-    internal class HSI {
+    internal class HorizontalSituationIndicator {
         // Things that persist between frames
         static private bool running = false;
 
@@ -39,11 +39,11 @@ namespace Avionics {
             return new float2(origin.X + xr, origin.Y + yr);
         }
 
-        public HSI() {
+        public HorizontalSituationIndicator() {
             // Constructor logic here
         }
-        public static void Update(float _heading, Runway? runway, double2 deviation, float bearing, float distance_m, float slope) {
-            if(runway == null) {
+        public static void Update(float _heading, Runway? runway, float2? deviation, float? bearing, float? distance_m, float? slope) {
+            if(runway == null || deviation == null || bearing == null || distance_m == null || slope == null) {
                 running = false;
                 return;
             } else {
@@ -51,24 +51,24 @@ namespace Avionics {
             }
 
             // --- Deviation math ------------------------------------------------------
-            float lateral_deviation_rad = (float)deviation.X;
-            float vertical_deviation_rad = (float)deviation.Y;
+            float lateral_deviation_rad = (float)deviation.Value.X;
+            float vertical_deviation_rad = (float)deviation.Value.Y;
 
-            float rad_per_dot = 1f * AvionicsMain.Deg2Rad; // 1 degree per dot
+            float rad_per_dot = 1f * Geomath.Deg2Rad; // 1 degree per dot
             lateral_deviation_dots = lateral_deviation_rad / rad_per_dot;
             vertical_deviation_dots = vertical_deviation_rad / rad_per_dot;
 
-            int bearing_deg = (int)(bearing * AvionicsMain.Rad2Deg) % 360;
-            int heading_deg = (int)AvionicsMain.GetHeadingDeg(heading);
-            int slope_deg = (int)(slope * AvionicsMain.Rad2Deg);
+            int bearing_deg = (int)(bearing * Geomath.Rad2Deg) % 360;
+            int heading_deg = (int)Geomath.GetHeadingDeg(heading);
+            int slope_deg = (int)(slope * Geomath.Rad2Deg);
             int slope_int = slope_deg;
             HDG_text = $"{heading_deg}°";
             BRG_text = $"{bearing_deg}°";
-            DST_text = FlightInstruments.DistanceToString(distance_m);
+            DST_text = UnitControler.DistanceToString(distance_m.Value);
             Slope_text = $"{slope_int}°";
 
             runway_heading = (float)runway.GetTrueHeading();
-            nav_bearing = bearing;
+            nav_bearing = bearing.Value;
             heading = _heading;
         }
         internal static unsafe void Render(ImDrawList* draw_list, float2 windowPos, float2 size) {
@@ -89,7 +89,7 @@ namespace Avionics {
             ImDrawListExtensions.AddText(draw_list, cdi_center - new float2(70 - cdi_radius, -cdi_radius), new ImColor8(255, 255, 255, 255), $"Slope:{Slope_text}");
 
             float2 LocalToWorld(float2 local, float angle = 0f)
-                => HSI.LocalToWorld(local, cdi_center, heading, angle);
+                => HorizontalSituationIndicator.LocalToWorld(local, cdi_center, heading, angle);
 
             ImColor8 white = new ImColor8(255, 255, 255, 255);
             ImColor8 green = new ImColor8(0, 255, 0, 255);
@@ -113,7 +113,7 @@ namespace Avionics {
                     tickLength = 8f;
                     tickThickness = 1f;
                 }
-                float angle_rad = i * 5.0f * AvionicsMain.Deg2Rad;
+                float angle_rad = i * 5.0f * Geomath.Deg2Rad;
                 float2 tick_start_local = new float2(cdi_radius * (float)Math.Cos(angle_rad), cdi_radius * (float)Math.Sin(angle_rad));
                 float2 tick_end_local = new float2((cdi_radius - tickLength) * (float)Math.Cos(angle_rad), (cdi_radius - tickLength) * (float)Math.Sin(angle_rad));
                 ImDrawListExtensions.AddLine(draw_list, LocalToWorld(tick_start_local), LocalToWorld(tick_end_local), white, tickThickness);

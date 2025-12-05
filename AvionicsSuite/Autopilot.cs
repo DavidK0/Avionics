@@ -2,7 +2,7 @@
 using KSA;
 
 namespace Avionics {
-    public class Autopilot {
+    internal class Autopilot {
         public enum VerticalMode {
             AltitudeHold,
             VerticalSpeed,
@@ -22,8 +22,6 @@ namespace Avionics {
         public LateralMode lateralMode = LateralMode.off;
 
         public bool engaged = false;
-
-        private FlightInstruments.DistanceUnit previousUnit = FlightInstruments.DistanceUnit.NauticalMiles;
 
         public float current_altitude = 10000f;
         public float current_vs;
@@ -77,7 +75,7 @@ namespace Avionics {
             target_vs_display_value = MathF.Max(0f, target_vs_display_value);
 
             // Update target_vs_mps and target_altitude_m based on current unit
-            if(FlightInstruments.CurrentUnit == FlightInstruments.DistanceUnit.Kilometers) {
+            if(UnitControler.CurrentUnit == UnitControler.UnitSystem.Kilometers) {
                 target_altitude_m = target_altitude_display_value; // in meters
                 target_vs_mps = target_vs_display_value; // in m/s
             } else {
@@ -85,7 +83,7 @@ namespace Avionics {
                 target_vs_mps = target_vs_display_value * 0.00508f; // feet per minute to m/s
             }
 
-            if(FlightInstruments.CurrentUnit == FlightInstruments.DistanceUnit.Kilometers) {
+            if(UnitControler.CurrentUnit == UnitControler.UnitSystem.Kilometers) {
                 large_height_display_unit = 1000f; // 1000 meters
                 small_height_display_unit = 100f; // 100 meters
                 vs_display_unit = 1f; // 1 m/s
@@ -123,23 +121,23 @@ namespace Avionics {
                 // Set heading
                 if(lateralMode == LateralMode.HeadingHold) {
                     // Heading hold mode
-                    commanded_heading = (float)AvionicsMain.GetHeading(vehicle);
+                    commanded_heading = (float)Geomath.GetHeading(vehicle);
                 } else if(lateralMode == LateralMode.Approach) {
                     // Approach mode
                     // To be implemented
-                    commanded_heading = (float)AvionicsMain.GetHeading(vehicle);
+                    commanded_heading = (float)Geomath.GetHeading(vehicle);
                 } else if(lateralMode == LateralMode.Nav) {
                     // Nav mode
                     if(bearing.HasValue) {
                         commanded_heading = bearing.Value - (float)Math.PI / 2;
                     } else {
                         lateralMode = LateralMode.HeadingHold;
-                        commanded_heading = (float)AvionicsMain.GetHeading(vehicle);
+                        commanded_heading = (float)Geomath.GetHeading(vehicle);
                     }
                 } else {
                     // Off
                     // I don't know how to less than all of the axes right now
-                    commanded_heading = (float)AvionicsMain.GetHeading(vehicle);
+                    commanded_heading = (float)Geomath.GetHeading(vehicle);
                 }
 
                 flightComputer.CustomAttitudeTarget = new double3(commanded_roll, commanded_pitch, commanded_heading);
@@ -156,10 +154,11 @@ namespace Avionics {
             return $"{engaged}, {target_altitude_m}, {(int)current_altitude}, {target_vs_mps}, {commanded_vs}, {current_vs}, {vehicleString}";
         }
 
-        public void ChangeUnit() {
-            switch(FlightInstruments.CurrentUnit) {
-                case FlightInstruments.DistanceUnit.NauticalMiles:
-                    if(previousUnit == FlightInstruments.DistanceUnit.Kilometers) {
+        internal void ChangeUnit(UnitControler.UnitSystem previousUnit) {
+            //Console.WriteLine($"Changing unit from {previousUnit} to {UnitControler.CurrentUnit}");
+            switch(UnitControler.CurrentUnit) {
+                case UnitControler.UnitSystem.NauticalMiles:
+                    if(previousUnit == UnitControler.UnitSystem.Kilometers) {
                         // m -> ft
                         target_altitude_display_value *= 3.28084f;
 
@@ -169,8 +168,8 @@ namespace Avionics {
                     }
                     target_vs_display_value = MathF.Round(target_vs_display_value / 100f) * 100f;
                     break;
-                case FlightInstruments.DistanceUnit.StatuteMiles:
-                    if(previousUnit == FlightInstruments.DistanceUnit.Kilometers) {
+                case UnitControler.UnitSystem.StatuteMiles:
+                    if(previousUnit == UnitControler.UnitSystem.Kilometers) {
                         // m -> ft
                         target_altitude_display_value *= 3.28084f;
 
@@ -179,8 +178,8 @@ namespace Avionics {
                     }
                     target_vs_display_value = MathF.Round(target_vs_display_value / 100f) * 100f;
                     break;
-                case FlightInstruments.DistanceUnit.Kilometers:
-                    if(previousUnit != FlightInstruments.DistanceUnit.Kilometers) {
+                case UnitControler.UnitSystem.Kilometers:
+                    if(previousUnit != UnitControler.UnitSystem.Kilometers) {
                         //ft -> m
                         target_altitude_display_value /= 3.28084f;
 
@@ -193,8 +192,36 @@ namespace Avionics {
 
             // Round target_altitude_display_value to the nearest 100 display units
             target_altitude_display_value = MathF.Round(target_altitude_display_value / 100f) * 100f;
+        }
+    }
+    public class PID {
+        public float Kp;
+        public float Ki;
+        public float Kd;
 
-            previousUnit = FlightInstruments.CurrentUnit;
+        public float integral;
+        public float lastError;
+
+        public PID(float kp, float ki, float kd) {
+            Kp = kp;
+            Ki = ki;
+            Kd = kd;
+            Reset();
+        }
+        public void Reset() {
+            integral = 0f;
+            lastError = 0f;
+        }
+        public float Update(float error, float dt) {
+            integral += error * dt;
+            float derivative = (error - lastError) / dt;
+
+            lastError = error;
+
+            return Kp * error + Ki * integral + Kd * derivative;
+        }
+        public string GetDebugString() {
+            return $"{Kp}, {Ki}, {Kd}, {integral}, {lastError}";
         }
     }
 }

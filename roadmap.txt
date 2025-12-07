@@ -6,10 +6,11 @@ Improve HSI
 * Loc/GS capturing
 * Add ETA
 * Add bearing marker
+Improve Turn Indicator
+* Add slip/skid indicator
+* Add rate of roll
 Add more flight instruments
 * Artificial Horizon
-* Heading Indicator
-* Turn Coordinator
 * Angle of Attack Indicator
 * Machmeter
 * ASL vs AGL instruments (radar altimeter)
@@ -21,6 +22,8 @@ Improve flight instrument graphics
 * More realistic instrument faces
 * Different styles (steam gauge, glass cockpit)
 * Saving/loading configurations
+Add support for switching aircraft
+Airspace
 
 Things I probably won't add unless they become relevant or I become more skilled at modding:
 * Tachometer / N1/N2 indicators

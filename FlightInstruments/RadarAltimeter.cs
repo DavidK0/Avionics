@@ -24,10 +24,10 @@ namespace Avionics {
 
         public static void Update(float radarAltitude_m) {
             // Digital readout – show the actual value, limited to non-negative
-            altText = UnitControler.AltitudeToString(radarAltitude_m, 0);
+            altText = UnitController.SmallDistanceToString(radarAltitude_m, 0);
 
 
-            if(UnitControler.CurrentUnit == UnitControler.UnitSystem.Kilometers) {
+            if(UnitController.CurrentUnit == UnitController.UnitSystem.Kilometers) {
                 MaxAltMeter = 20000f;
             } else {
                 MaxAltMeter = 18288;
@@ -104,7 +104,7 @@ namespace Avionics {
                         center.Y + sinA * labelRadius
                     );
 
-                    string label = UnitControler.AltitudeToString(alt, 0, true);
+                    string label = UnitController.SmallDistanceToString(alt, 0, true);
                     ImDrawListExtensions.AddText(draw_list, labelPos - new float2(10f, 6f), white, label);
                 }
             }

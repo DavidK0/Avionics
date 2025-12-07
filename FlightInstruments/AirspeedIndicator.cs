@@ -25,7 +25,7 @@ namespace Avionics {
 
             // Set max speed based on unit system
             // ~400 knots (205 m/s) or ~740 km/h for imperial/metric
-            if (UnitControler.CurrentUnit == UnitControler.UnitSystem.Kilometers) {
+            if (UnitController.CurrentUnit == UnitController.UnitSystem.Kilometers) {
                 maxSpeedMps = 205f; // ~740 km/h
             } else {
                 maxSpeedMps = 205f; // ~400 knots
@@ -39,7 +39,7 @@ namespace Avionics {
             float value;
             string suffix;
 
-            if (UnitControler.CurrentUnit == UnitControler.UnitSystem.Kilometers) {
+            if (UnitController.CurrentUnit == UnitController.UnitSystem.Kilometers) {
                 // Convert m/s to km/h
                 value = speedMps * 3.6f;
                 suffix = "km/h";
@@ -93,7 +93,7 @@ namespace Avionics {
             float majorStep;
             float minorStep;
 
-            if (UnitControler.CurrentUnit == UnitControler.UnitSystem.Kilometers) {
+            if (UnitController.CurrentUnit == UnitController.UnitSystem.Kilometers) {
                 maxDisplayValue = maxSpeedMps * 3.6f; // km/h
                 majorStep = 100f;  // Major tick every 100 km/h
                 minorStep = 20f;   // Minor tick every 20 km/h
@@ -107,7 +107,7 @@ namespace Avionics {
             for (float displaySpeed = 0f; displaySpeed <= maxDisplayValue; displaySpeed += minorStep) {
                 // Convert display speed back to m/s for angle calculation
                 float speedMps;
-                if (UnitControler.CurrentUnit == UnitControler.UnitSystem.Kilometers) {
+                if (UnitController.CurrentUnit == UnitController.UnitSystem.Kilometers) {
                     speedMps = displaySpeed / 3.6f;
                 } else {
                     speedMps = displaySpeed * 0.514444f;

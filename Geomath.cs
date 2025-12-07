@@ -66,7 +66,7 @@ namespace Avionics {
         public static string GetBearingString(double bearing_rad) {
             // Convert to degrees
             double bearing_deg = bearing_rad * (180.0f / Math.PI);
-            return UnitControler.RadToString((float)bearing_rad);
+            return UnitController.RadToString((float)bearing_rad);
         }
 
         public static double GetDistance(double3 pos1, double3 pos2, double radius) {

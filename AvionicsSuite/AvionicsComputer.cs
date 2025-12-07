@@ -5,64 +5,77 @@ namespace Avionics {
     internal class AvionicsComputer {
         // Reference to the vehicle and its flight computer
         public Vehicle vehicle;
-        public Autopilot autopilot;
         public FlightManagementSystem fms;
+        public NavigationSystem navSystem;
+        public FlightDirector fd;
+        public Autopilot autopilot;
 
         // States of the vehicle need for displaying flight instruments
 
         // Vehicle info
         public double3 pos_GPS;
-        public float heading;
-        public float verticalSpeed_mps;
-        public float indicatedAirspeed_mps;
         public float radarAltitude;
-
-        // General target info
-        public float? targetBearing_rad;
-        public float? targetDistance_m;
-        public float? targetSlope_rad;
-        public float2? targetDeviation;
+        // Speeds
+        public float indicatedAirspeed_mps;
+        public float verticalSpeed_mps;
+        public float lateralSpeed_mps;
+        // Acceleration
+        public float previous_lateralSpeed_mps;
+        public float lateral_acceleration;
+        // Heading
+        public float heading;
+        public float previous_heading;
+        public float yawRate;
 
         // Target info for runway approach
         public double3? targetGPS;
 
-        public AvionicsComputer() {
-            autopilot = new Autopilot();
+        public AvionicsComputer(Vehicle vehicle) {
+            this.vehicle = vehicle;
             fms = new FlightManagementSystem();
+            navSystem = new NavigationSystem();
+            fd = new FlightDirector();
+            autopilot = new Autopilot(vehicle);
         }
-        public void SetTargetAirport(Airport? airport) {
-            fms.targetAirport = airport;
-        }
-        public void SetTargetRunway(Runway? runway) {
-            fms.targetRunway = runway;
+        public void SetApproach(Runway runway) {
+            fms.ActiveApproach = new FlightManagementSystem.ApproachProcedure(runway);
         }
 
         public void Update(float dt) {
-            if(vehicle == null || fms == null || autopilot == null) return;
+            if(vehicle == null || fms == null || fd == null) return;
 
             // Vehicle state update
             UpdateVehicleStateFromSensors(vehicle);
 
-            // FMS update
-            fms.Update();
+            // Acceleration
+            lateral_acceleration = (indicatedAirspeed_mps - previous_lateralSpeed_mps) / dt; // m/s²
+            previous_lateralSpeed_mps = lateralSpeed_mps;
 
-            // Nav updates
-            targetGPS = fms.targetRunway?.GetGPS();
-            targetBearing_rad = fms.targetRunway != null ? (float)Geomath.GetBearing(pos_GPS, targetGPS.Value) : null;
-            targetDistance_m = fms.targetRunway != null ? (float)Geomath.GetDistance(pos_GPS, targetGPS.Value, vehicle.Orbit.Parent.MeanRadius) : null;
-            targetSlope_rad = fms.targetRunway != null ? (float)fms.targetRunway.GetCurrentVerticalAngle(pos_GPS, vehicle.Orbit.Parent.MeanRadius) : null;
-            float lateralDeviation = fms.targetRunway != null ? (float)fms.targetRunway.GetLateralDeviation(pos_GPS, vehicle.Orbit.Parent.MeanRadius) : new float();
-            float verticalDeviation = fms.targetRunway != null ? (float)fms.targetRunway.GetVerticalDeviation(pos_GPS, vehicle.Orbit.Parent.MeanRadius) : new float();
-            targetDeviation = fms.targetRunway != null ? new float2(lateralDeviation, verticalDeviation) : null;
+            // Yaw rate
+            yawRate = (heading - previous_heading) / dt;
+            previous_heading = heading;
 
-            autopilot.Update(vehicle, dt, fms.targetRunway != null ? (float)fms.targetRunway.GetBearing(pos_GPS) : null);
+            // Flight Management System update
+            fms.Update(dt);
+
+            // Navigation system update
+            if(fms.ActiveApproach != null)
+                navSystem.Update(pos_GPS, fms.ActiveApproach, (float)vehicle.Parent.MeanRadius);
+
+            // Flight director update
+            fd.Update(vehicle, dt, navSystem.targetBearing_rad, navSystem);
+
+            // Autopilot update
+            autopilot.Update(fd);
         }
         public void UpdateVehicleStateFromSensors(Vehicle vehicle) {
             pos_GPS = Geomath.GetGPSPosition(vehicle);
             heading = (float)Geomath.GetHeading(vehicle);
+            radarAltitude = (float)vehicle.GetRadarAltitude();
+            // Speeds
             verticalSpeed_mps = (float)double3.Dot(vehicle.GetVelocityCci(), vehicle.GetPositionCci().Normalized());
             indicatedAirspeed_mps = (float)vehicle.GetSurfaceSpeed();
-            radarAltitude = (float)vehicle.GetRadarAltitude();
+            lateralSpeed_mps = (float)Math.Sqrt(indicatedAirspeed_mps * indicatedAirspeed_mps - verticalSpeed_mps * verticalSpeed_mps);
         }
     }
 }

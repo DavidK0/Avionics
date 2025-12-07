@@ -15,10 +15,10 @@ namespace Avionics {
             // Constructor logic here
         }
         public static void Update(float verticalSpeed_mps) {
-            vsText = UnitControler.SpeedToString(verticalSpeed_mps, 0);
+            vsText = UnitController.SmallSpeedToString(verticalSpeed_mps, 0);
 
 
-            if(UnitControler.CurrentUnit == UnitControler.UnitSystem.Kilometers) {
+            if(UnitController.CurrentUnit == UnitController.UnitSystem.Kilometers) {
                 maxVsMps = 20f * 2f;
             } else {
                 maxVsMps = 20.32f * 2f;
@@ -77,7 +77,7 @@ namespace Avionics {
                     );
 
                     string label;
-                    if(UnitControler.CurrentUnit == UnitControler.UnitSystem.Kilometers) {
+                    if(UnitController.CurrentUnit == UnitController.UnitSystem.Kilometers) {
                         // Show in m/s: 0.5, 1, 1.5, 2 etc.
                         float labelValue = MathF.Abs(vs);
                         label = labelValue.ToString("0.#");

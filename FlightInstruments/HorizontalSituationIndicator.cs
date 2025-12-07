@@ -42,8 +42,8 @@ namespace Avionics {
         public HorizontalSituationIndicator() {
             // Constructor logic here
         }
-        public static void Update(float _heading, Runway? runway, float2? deviation, float? bearing, float? distance_m, float? slope) {
-            if(runway == null || deviation == null || bearing == null || distance_m == null || slope == null) {
+        public static void Update(float _heading, FlightManagementSystem.ApproachProcedure? activeApproach, float2? deviation, float? bearing, float? distance_m, float? slope) {
+            if(activeApproach == null || deviation == null || bearing == null || distance_m == null || slope == null) {
                 running = false;
                 return;
             } else {
@@ -64,10 +64,10 @@ namespace Avionics {
             int slope_int = slope_deg;
             HDG_text = $"{heading_deg}°";
             BRG_text = $"{bearing_deg}°";
-            DST_text = UnitControler.DistanceToString(distance_m.Value);
+            DST_text = UnitController.BigDistanceToString(distance_m.Value);
             Slope_text = $"{slope_int}°";
 
-            runway_heading = (float)runway.GetTrueHeading();
+            runway_heading = (float)activeApproach.Runway.GetTrueHeading();
             nav_bearing = bearing.Value;
             heading = _heading;
         }

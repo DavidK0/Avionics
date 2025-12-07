@@ -1,10 +1,12 @@
 # Avionics
 Avionics is a mod for Kitten Space Agency that adds airplane flight instruments. The current features are:
-* A Horizontal Situation Indicator (HSI)
-* A Vertical Speed Indicator (VSI)
-* An Airspeed Indicator (ASI)
-* A Radar Altimeter
-* An autopilot with altitude hold, heading hold, and airport navigation
+* Horizontal Situation Indicator
+* Vertical Speed Indicator
+* Airspeed Indicator
+* Heading Indicator
+* Turn Indicator
+* Radar Altimeter
+* Autopilot with altitude hold, heading hold, and airport navigation
 * The positions of thousands of airports across the world, which work with the HSI and autopilot.
 
 This mod does *not* add airport models, runways, or airplanes to KSA; it only adds the navigation tools to get to where the airports would be.
@@ -56,7 +58,7 @@ enabled = true
 1. Open the Avionics pages with the 'Avionics' button in the mod menu.
 1. Enter the ICAO code of an airport in the 'Runway Selection' window and select a runway
 3. View the directions to the runway on the 'HSI' window.
-4. Enable autopilot in the 'Autopilot' window and set the target altitude.
+4. Enable autopilot in the 'Autopilot' window and set the target altitude. You must disable the manual mode on the in game autopilot.
 
 ## Links
 * [Avionics on Ahwoo Forums](https://forums.ahwoo.com/threads/avionics.560/)

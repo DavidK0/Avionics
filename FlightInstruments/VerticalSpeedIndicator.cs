@@ -2,14 +2,12 @@
 using Brutal.Numerics;
 
 namespace Avionics {
-    internal class VerticalSpeedIndicator {
-        static private float radius = 100f;
-        static private float innerRadius = radius - 18f;
-        static private float maxAngleRad = 135f * Geomath.Deg2Rad;
-        static float maxVsMps;
+    public class VerticalSpeedIndicator {
+        public static float maxAngleRad = 135f * Geomath.Deg2Rad;
+        public static float maxVsMps;
 
-        static private string vsText;
-        static private float clampedVs;
+        public static string vsText;
+        public static float clampedVs;
 
         public VerticalSpeedIndicator() {
             // Constructor logic here
@@ -26,14 +24,16 @@ namespace Avionics {
             clampedVs = MathF.Max(-maxVsMps, MathF.Min(maxVsMps, verticalSpeed_mps));
         }
         internal static unsafe void Render(ImDrawList* draw_list, float2 windowPos, float2 size) {
-            ImColor8 white = new ImColor8(255, 255, 255, 255);
-            ImColor8 green = new ImColor8(0, 255, 0, 255);
-
-            // Center and radius of the VSI
+            // Center and size
+            float radius = Math.Min(size.X, size.Y) * 0.45f;
+            float innerRadius = radius * .82f;
             float2 center = new float2(
                 windowPos.X + size.X * 0.5f,
-                windowPos.Y + size.Y * 0.5f
+                windowPos.Y + size.Y - radius
             );
+
+            ImColor8 white = new ImColor8(255, 255, 255, 255);
+            ImColor8 green = new ImColor8(0, 255, 0, 255);
 
             // Dial bezel
             ImDrawListExtensions.AddCircle(draw_list, center, radius, white, 0, 2f);

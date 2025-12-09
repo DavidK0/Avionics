@@ -3,20 +3,17 @@ using Brutal.Numerics;
 
 namespace Avionics {
     internal class RadarAltimeter {
-        // Geometry
-        static private float radius = 100f;
-        static private float innerRadius = radius - 20f;
-        static private float maxAngleRad = 135f * Geomath.Deg2Rad; // ±135° sweep
+        public static float maxAngleRad = 135f * Geomath.Deg2Rad; // ±135° sweep
 
         // Scale
-        const float FeetPerMeter = 3.28084f;
-        static float MaxAltMeter;
+        public const float FeetPerMeter = 3.28084f;
+        public static float MaxAltMeter;
 
-        static private float clampedAltM;
+        public static float clampedAltM;
 
         // State
-        static private float needleAltFeet;   // clamped value for the needle
-        static private string altText = "0 FT";
+        public static float needleAltFeet;   // clamped value for the needle
+        public static string altText = "0 FT";
 
         public RadarAltimeter() {
             // Constructor logic here
@@ -39,7 +36,7 @@ namespace Avionics {
         // 0 m   -> 45°
         // max   -> 315°
         // Low altitudes get more angular resolution than high altitudes.
-        static private float AltToAngle(float meters) {
+        public static float AltToAngle(float meters) {
             // Normalize altitude into [0,1]
             float t = meters / MaxAltMeter;
             t = MathF.Max(0f, MathF.Min(1f, t));    // clamp 0..1
@@ -59,14 +56,16 @@ namespace Avionics {
         }
 
         internal static unsafe void Render(ImDrawList* draw_list, float2 windowPos, float2 size) {
-            ImColor8 white = new ImColor8(255, 255, 255, 255);
-            ImColor8 green = new ImColor8(0, 255, 0, 255);
-
-            // Center of the instrument
+            // Center and size
+            float radius = Math.Min(size.X, size.Y) * 0.45f;
+            float innerRadius = radius * .82f;
             float2 center = new float2(
                 windowPos.X + size.X * 0.5f,
-                windowPos.Y + size.Y * 0.5f
+                windowPos.Y + size.Y - radius
             );
+
+            ImColor8 white = new ImColor8(255, 255, 255, 255);
+            ImColor8 green = new ImColor8(0, 255, 0, 255);
 
             // Bezel
             ImDrawListExtensions.AddCircle(draw_list, center, radius, white, 0, 2f);

@@ -73,11 +73,11 @@ namespace Avionics {
 
             return (float)angle_rad;
         }
-        public double GetVerticalDeviation(double3 GPSPos, double radius) {
+        public double GetVerticalDeviation_rad(double3 GPSPos, double radius) {
             return GetCurrentVerticalAngle(GPSPos, radius) - glideSlopeRad;
         }
 
-        public double GetLateralDeviation(double3 GPSPos, double heading) {
+        public double GetLateralDeviation_rad(double3 GPSPos, double heading) {
             double bearing = GetBearing(GPSPos);
 
             double diff = (GetTrueHeading() - bearing) % (2 * Math.PI);

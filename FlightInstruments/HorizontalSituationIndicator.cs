@@ -4,27 +4,27 @@ using Brutal.Numerics;
 namespace Avionics {
     internal class HorizontalSituationIndicator {
         // Things that persist between frames
-        static private bool running = false;
+        public static bool running = false;
 
-        static float cdi_radius = 100.0f;
-        static float cdi_thickness = 3f;
-        static float dot_radius = 5.0f;
+        public static float cdi_radius = 100.0f;
+        public static float cdi_thickness = 3f;
+        public static float dot_radius = 5.0f;
 
         // Things update every frame
-        static private float heading;
+        public static float heading;
 
-        static private float nav_bearing;
-        static private float runway_heading;
+        public static float nav_bearing;
+        public static float runway_heading;
 
-        static private string HDG_text;
-        static private string BRG_text;
-        static private string DST_text;
-        static private string Slope_text;
+        public static string HDG_text;
+        public static string BRG_text;
+        public static string DST_text;
+        public static string Slope_text;
 
-        static private float lateral_deviation_dots;
-        static private float vertical_deviation_dots;
+        public static float lateral_deviation_dots;
+        public static float vertical_deviation_dots;
 
-        internal static float2 LocalToWorld(
+        public static float2 LocalToWorld(
     float2 local,
     float2 origin,
     float headingRad,
@@ -42,8 +42,8 @@ namespace Avionics {
         public HorizontalSituationIndicator() {
             // Constructor logic here
         }
-        public static void Update(float _heading, FlightManagementSystem.ApproachProcedure? activeApproach, float2? deviation, float? bearing, float? distance_m, float? slope) {
-            if(activeApproach == null || deviation == null || bearing == null || distance_m == null || slope == null) {
+        public static void Update(float _heading, float? runwayHeading, float2? deviation, float? bearing, float? distance_m, float? slope) {
+            if(runwayHeading == null || deviation == null || bearing == null || distance_m == null || slope == null) {
                 running = false;
                 return;
             } else {
@@ -67,7 +67,7 @@ namespace Avionics {
             DST_text = UnitController.BigDistanceToString(distance_m.Value);
             Slope_text = $"{slope_int}°";
 
-            runway_heading = (float)activeApproach.Runway.GetTrueHeading();
+            runway_heading = runwayHeading.Value;
             nav_bearing = bearing.Value;
             heading = _heading;
         }
@@ -77,10 +77,12 @@ namespace Avionics {
                 return;
             }
 
-            // Center of the CDI on screen
+            // Center and size
+            float radius = Math.Min(size.X, size.Y) * 0.45f;
+            float innerRadius = radius * .82f;
             float2 cdi_center = new float2(
                 windowPos.X + size.X * 0.5f,
-                windowPos.Y + size.Y * 0.5f
+                windowPos.Y + size.Y - radius
             );
 
             ImDrawListExtensions.AddText(draw_list, cdi_center - new float2(cdi_radius, 20 + cdi_radius), new ImColor8(255, 255, 255, 255), $"HDG:{HDG_text}");

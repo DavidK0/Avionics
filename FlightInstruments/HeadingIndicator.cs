@@ -3,13 +3,10 @@ using Brutal.Numerics;
 
 namespace Avionics {
     internal class HeadingIndicator {
-        // Geometry
-        static private float radius = 100f;
-        static private float innerRadius = radius - 18f;
 
         // State
-        static private float currentHeadingRad;
-        static private string headingText = "0°";
+        public static float currentHeadingRad;
+        public static string headingText = "0°";
 
         public HeadingIndicator() {
             // Constructor logic here
@@ -27,7 +24,7 @@ namespace Avionics {
         /// <summary>
         /// Transforms a local coordinate to world (screen) space, rotating by the current heading.
         /// </summary>
-        static private float2 LocalToWorld(float2 local, float2 center) {
+        public static float2 LocalToWorld(float2 local, float2 center) {
             // Rotate opposite to heading so compass card appears to rotate under fixed aircraft symbol
             float angle = -currentHeadingRad - (float)Math.PI / 2f;
             float cosA = MathF.Cos(angle);
@@ -40,15 +37,17 @@ namespace Avionics {
         }
 
         internal static unsafe void Render(ImDrawList* draw_list, float2 windowPos, float2 size) {
+            // Center and size
+            float radius = Math.Min(size.X, size.Y) * 0.45f;
+            float innerRadius = radius * .82f;
+            float2 center = new float2(
+                windowPos.X + size.X * 0.5f,
+                windowPos.Y + size.Y - radius
+            );
+
             ImColor8 white = new ImColor8(255, 255, 255, 255);
             ImColor8 yellow = new ImColor8(255, 255, 0, 255);
             ImColor8 orange = new ImColor8(255, 165, 0, 255);
-
-            // Center of the instrument
-            float2 center = new float2(
-                windowPos.X + size.X * 0.5f,
-                windowPos.Y + size.Y * 0.5f
-            );
 
             // Bezel
             ImDrawListExtensions.AddCircle(draw_list, center, radius, white, 0, 2f);

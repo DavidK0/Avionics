@@ -3,31 +3,32 @@ using Brutal.Numerics;
 
 namespace Avionics {
     internal class TurnIndicator {
-        // Geometry
-        static private float radius = 100f;
-        static private float innerRadius = radius - 24f;
 
         // Turn scale parameters
-        static private float standardRateDegPerSec = 3f;                       // "Rate 1" = 3°/s
-        static private float standardRateRadPerSec = standardRateDegPerSec * Geomath.Deg2Rad;
-        static private float maxRateRadPerSec = 2f * standardRateRadPerSec;    // full deflection ~6°/s
+        public static float standardRateDegPerSec = 3f;                       // "Rate 1" = 3°/s
+        public static float standardRateRadPerSec = standardRateDegPerSec * Geomath.Deg2Rad;
+        public static float maxRateRadPerSec = 2f * standardRateRadPerSec;    // full deflection ~6°/s
 
-        static private float maxDeflectionDeg = 25f;                           // visual needle deflection
-        static private float maxDeflectionRad = maxDeflectionDeg * Geomath.Deg2Rad;
+        public static float maxDeflectionDeg = 25f;                           // visual needle deflection
+        public static float maxDeflectionRad = maxDeflectionDeg * Geomath.Deg2Rad;
 
         // Slip ball parameters
-        static private float g = 9.80665f;
-        static private float ballFullScaleAccel = 0.25f * g;                   // ~0.25 g sideways for full-scale
-        static private float ballTrackHalfWidth = 35f;
-        static private float ballRadius = 6f;
+        public static float g = 9.80665f;
+        public static float ballFullScaleAccel = 0.25f * g;                   // ~0.25 g sideways for full-scale
+        public static float ballTrackHalfWidth = 35f;
+        public static float ballRadius = 6f;
 
         // Smoothing
-        static private float smoothing = 0.2f;                                  // 0..1, higher = less smoothing
+        public static float smoothing = 0.2f;                                  // 0..1, higher = less smoothing
 
         // State
-        static private float filteredYawRateRadPerSec = 0f;
-        static private float filteredSlipAccel = 0f;
-        static private string rateText = "LVL";
+        public static float filteredYawRateRadPerSec = 0f;
+        public static float filteredSlipAccel = 0f;
+        public static string rateText = "LVL";
+
+        // How "wide" the slip arc is (half-angle)
+        public static float ballArcHalfAngleDeg = 30f;
+        public static  float ballArcHalfAngleRad = ballArcHalfAngleDeg * Geomath.Deg2Rad;
 
         public TurnIndicator() {
             // Constructor logic here (if needed)
@@ -61,7 +62,7 @@ namespace Avionics {
         /// Map yaw rate (rad/s) to a needle angle in radians.
         /// Zero rate -> straight up, positive rate -> deflect needle to the right.
         /// </summary>
-        static private float YawRateToAngle(float yawRate_radps) {
+        public static float YawRateToAngle(float yawRate_radps) {
             float t = yawRate_radps / maxRateRadPerSec; // -1..+1
             if(t < -1f) t = -1f;
             if(t > 1f) t = 1f;
@@ -71,27 +72,32 @@ namespace Avionics {
         }
 
         /// <summary>
-        /// Map lateral acceleration (m/s²) to horizontal slip ball offset in pixels.
-        /// Positive acceleration -> ball to the right (assuming rightward accel is positive).
+        /// Map lateral acceleration (m/s²) to an angle offset from straight-down, in radians.
+        /// Positive acceleration -> ball to the right along the arc.
         /// </summary>
-        static private float SlipToOffset(float lateralAccel_mps2) {
+        public static float SlipToAngle(float lateralAccel_mps2) {
             float t = lateralAccel_mps2 / ballFullScaleAccel; // -1..+1
             if(t < -1f) t = -1f;
             if(t > 1f) t = 1f;
 
-            return t * ballTrackHalfWidth;
+            // Base at straight down (bottom of the instrument)
+            const float baseAngle = MathF.PI / 2f;
+
+            return baseAngle + t * ballArcHalfAngleRad;
         }
 
         internal static unsafe void Render(ImDrawList* draw_list, float2 windowPos, float2 size) {
+            // Center and size
+            float radius = Math.Min(size.X, size.Y) * 0.45f;
+            float innerRadius = radius * .82f;
+            float2 center = new float2(
+                windowPos.X + size.X * 0.5f,
+                windowPos.Y + size.Y - radius
+            );
+
             ImColor8 white = new ImColor8(255, 255, 255, 255);
             ImColor8 yellow = new ImColor8(255, 255, 0, 255);
             ImColor8 orange = new ImColor8(255, 165, 0, 255);
-
-            // Center of the instrument
-            float2 center = new float2(
-                windowPos.X + size.X * 0.5f,
-                windowPos.Y + size.Y * 0.5f
-            );
 
             // Bezel
             ImDrawListExtensions.AddCircle(draw_list, center, radius, white, 0, 2f);
@@ -214,24 +220,63 @@ namespace Avionics {
                 );
             }
 
-            //// Slip / skid ball at the bottom
-            //{
-            //    float trackY = center.Y + radius * 0.45f;
-            //
-            //    // Track line
-            //    float2 left = new float2(center.X - ballTrackHalfWidth - 8f, trackY);
-            //    float2 right = new float2(center.X + ballTrackHalfWidth + 8f, trackY);
-            //    ImDrawListExtensions.AddLine(draw_list, left, right, white, 2f);
-            //
-            //    // Center reference marks on track
-            //    float2 centerMarkLeft = new float2(center.X - 8f, trackY);
-            //    float2 centerMarkRight = new float2(center.X + 8f, trackY);
-            //    ImDrawListExtensions.AddLine(draw_list, centerMarkLeft, centerMarkRight, white, 1.5f);
-            //
-            //    // Ball
-            //    float2 ballCenter = new float2(center.X + SlipToOffset(filteredSlipAccel), trackY);
-            //    ImDrawListExtensions.AddCircleFilled(draw_list, ballCenter, ballRadius, white);
-            //}
+            // Slip / skid ball at the bottom
+            {
+                // Radius at which the slip arc lives (just inside the bezel)
+                float slipRadius = radius * 0.65f;
+
+                const float baseAngle = MathF.PI / 2f; // straight down
+                float startAngle = baseAngle - ballArcHalfAngleRad;
+                float endAngle = baseAngle + ballArcHalfAngleRad;
+
+                // --- Track arc ---
+                {
+                    int segments = 32;
+                    float2 prev = new float2(
+                        center.X + MathF.Cos(startAngle) * slipRadius,
+                        center.Y + MathF.Sin(startAngle) * slipRadius
+                    );
+
+                    for(int i = 1; i <= segments; ++i) {
+                        float t = (float)i / segments;
+                        float a = startAngle + (endAngle - startAngle) * t;
+
+                        float2 p = new float2(
+                            center.X + MathF.Cos(a) * slipRadius,
+                            center.Y + MathF.Sin(a) * slipRadius
+                        );
+
+                        ImDrawListExtensions.AddLine(draw_list, prev, p, white, 2f);
+                        prev = p;
+                    }
+                }
+
+                // --- Center reference marks on the arc ---
+                {
+                    float centerTickLen = 8f;
+                    float2 dir = new float2(MathF.Cos(baseAngle), MathF.Sin(baseAngle)); // outward from center
+                    float2 outward = new float2(dir.X * (slipRadius + centerTickLen * 0.5f),
+                                                dir.Y * (slipRadius + centerTickLen * 0.5f));
+                    float2 inward = new float2(dir.X * (slipRadius - centerTickLen * 0.5f),
+                                                dir.Y * (slipRadius - centerTickLen * 0.5f));
+
+                    float2 tickStart = new float2(center.X + inward.X, center.Y + inward.Y);
+                    float2 tickEnd = new float2(center.X + outward.X, center.Y + outward.Y);
+
+                    ImDrawListExtensions.AddLine(draw_list, tickStart, tickEnd, white, 1.5f);
+                }
+
+                // --- Ball on the arc ---
+                {
+                    float angle = SlipToAngle(filteredSlipAccel);
+                    float2 ballCenter = new float2(
+                        center.X + MathF.Cos(angle) * slipRadius,
+                        center.Y + MathF.Sin(angle) * slipRadius
+                    );
+
+                    ImDrawListExtensions.AddCircleFilled(draw_list, ballCenter, ballRadius, white);
+                }
+            }
 
             // Text readout for turn information
             {

@@ -1,8 +1,7 @@
-﻿using Brutal.Numerics;
-using KSA;
+﻿using KSA;
 
 namespace Avionics {
-    internal class FlightDirector {
+    public class FlightDirector {
         public enum VerticalMode {
             AltitudeHold,
             VerticalSpeedHold,
@@ -36,15 +35,15 @@ namespace Avionics {
         public float large_height_m;
         public float small_height_m;
 
-        private PID vsPID;
-        private PID altitudePID;
+        public PID vsPID;
+        public PID altitudePID;
 
         public float commanded_pitch;
         public float commanded_heading;
         public float commanded_roll = 0f;
 
 
-        private float max_pitch_rad = 0.5f; // ~28.6 degrees
+        public float max_pitch_rad = 0.5f; // ~28.6 degrees
 
         public FlightDirector() {
             vsPID = new PID(0.3f, 0f, 0.5f);
@@ -54,8 +53,9 @@ namespace Avionics {
             target_altitude_display_value = new UnitController.VariableUnitSmallDistance();
         }
 
-        public void Update(Vehicle v, float dt, float? bearing, NavigationSystem navSystem) {
+        public void Update(Vehicle v, float dt, NavigationSystem navSystem) {
             if(navSystem == null || v == null) return;
+            NavigationSystem.NavSolution sol = navSystem.Current;
 
             vehicle = v;
             FlightComputer flightComputer = vehicle.FlightComputer;
@@ -101,11 +101,9 @@ namespace Avionics {
 
                 commanded_pitch = Math.Clamp(commanded_pitch, -max_pitch_rad, max_pitch_rad);
             } else if(verticalMode == VerticalMode.VNav) {
-                if(bearing.HasValue) {
+                if(sol.HasVerticalGuidance) {
                     // --- OUTER LOOP: Altitude PID produces a target vertical speed ---
-                    Console.WriteLine(navSystem.verticalDeviation);
-                    Console.WriteLine(GetDebugString());
-                    commanded_vs = altitudePID.Update(navSystem.verticalDeviation * -10000f, dt);
+                    commanded_vs = altitudePID.Update(sol.VerticalPathError_rad * -10000f, dt);
 
                     // Clamp commanded vertical speed to target vertical speed
                     commanded_vs = Math.Clamp(commanded_vs, -Math.Abs(target_vs_mps), Math.Abs(target_vs_mps));
@@ -118,8 +116,7 @@ namespace Avionics {
                 } else {
                     verticalMode = VerticalMode.AltitudeHold;
                 }
-                // Off
-                // I don't know how to less than all of the axes right now
+            // Off - do nothing
             }
 
             // Set heading
@@ -132,16 +129,16 @@ namespace Avionics {
                 commanded_heading = (float)Geomath.GetHeading(vehicle);
             } else if(lateralMode == LateralMode.Nav) {
                 // Nav mode
-                if(bearing.HasValue) {
-                    commanded_heading = bearing.Value - (float)Math.PI / 2;
+                if(sol.HasLateralGuidance) {
+                    commanded_heading = sol.BearingToTarget_rad - (float)Math.PI / 2;
                 } else {
-                    lateralMode = LateralMode.HeadingHold;
+                    lateralMode = LateralMode.off;
                     commanded_heading = (float)Geomath.GetHeading(vehicle);
                 }
             } else {
                 // Off
                 // I don't know how to less than all of the axes right now
-                commanded_heading = (float)Geomath.GetHeading(vehicle);
+                lateralMode = LateralMode.HeadingHold;
             }
         }
 

@@ -2,18 +2,16 @@
 using Brutal.Numerics;
 
 namespace Avionics {
-    internal class AirspeedIndicator {
+    public class AirspeedIndicator {
         // Geometry
-        static private float radius = 100f;
-        static private float innerRadius = radius - 18f;
-        static private float maxAngleRad = 150f * Geomath.Deg2Rad; // ±150° sweep (300° total)
+        public static float maxAngleRad = 150f * Geomath.Deg2Rad; // ±150° sweep (300° total)
 
         // Scale
-        static float maxSpeedMps;  // Maximum speed in m/s
+        public static float maxSpeedMps;  // Maximum speed in m/s
 
         // State
-        static private float clampedSpeedMps;
-        static private string speedText = "0";
+        public static float clampedSpeedMps;
+        public static string speedText = "0";
 
         public AirspeedIndicator() {
             // Constructor logic here
@@ -35,7 +33,7 @@ namespace Avionics {
         }
 
         // Convert airspeed to display string with appropriate units
-        static private string AirspeedToString(float speedMps, int digits = 0, bool removeSuffix = false) {
+        public static string AirspeedToString(float speedMps, int digits = 0, bool removeSuffix = false) {
             float value;
             string suffix;
 
@@ -60,7 +58,7 @@ namespace Avionics {
         // 0 m/s    -> bottom-left (30° from bottom, or 210° from right)
         // max m/s  -> bottom-right (330° from right)
         // Sweep: 300° total, clockwise from min to max
-        static private float SpeedToAngle(float speedMps) {
+        public static float SpeedToAngle(float speedMps) {
             // Normalize speed into [0,1]
             float t = speedMps / maxSpeedMps;
             t = MathF.Max(0f, MathF.Min(1f, t)); // clamp 0..1
@@ -76,14 +74,16 @@ namespace Avionics {
         }
 
         internal static unsafe void Render(ImDrawList* draw_list, float2 windowPos, float2 size) {
-            ImColor8 white = new ImColor8(255, 255, 255, 255);
-            ImColor8 green = new ImColor8(0, 255, 0, 255);
-
-            // Center of the instrument
+            // Center and size
+            float radius = Math.Min(size.X, size.Y) * 0.45f;
+            float innerRadius = radius * .82f;
             float2 center = new float2(
                 windowPos.X + size.X * 0.5f,
-                windowPos.Y + size.Y * 0.5f
+                windowPos.Y + size.Y - radius
             );
+
+            ImColor8 white = new ImColor8(255, 255, 255, 255);
+            ImColor8 green = new ImColor8(0, 255, 0, 255);
 
             // Bezel
             ImDrawListExtensions.AddCircle(draw_list, center, radius, white, 0, 2f);

@@ -1,40 +1,40 @@
 ﻿namespace Avionics {
-    internal static class UnitController {
-        internal enum UnitSystem {
+    public static class UnitController {
+        public enum UnitSystem {
             StatuteMiles, // miles, ft, feet-per-minute, and mph
             Kilometers,   // kilometers, meters, meters-per-second, and kph
             NauticalMiles // nm, meters, feet-per-minute, and knots
         }
-        internal static UnitSystem CurrentUnit { get; set; } = UnitSystem.NauticalMiles;
-        private delegate void DistanceSubscriber(Func<float, float> converter);
+        public static UnitSystem CurrentUnit { get; set; } = UnitSystem.NauticalMiles;
+        public delegate void DistanceSubscriber(Func<float, float> converter);
 
-        private static readonly List<DistanceSubscriber> bigDistance_subscribers = new();
-        private static readonly List<DistanceSubscriber> smallDistance_subscribers = new();
-        private static readonly List<DistanceSubscriber> bigSpeed_subscribers = new();
-        private static readonly List<DistanceSubscriber> smallSpeed_subscribers = new();
+        public static readonly List<DistanceSubscriber> bigDistance_subscribers = new();
+        public static readonly List<DistanceSubscriber> smallDistance_subscribers = new();
+        public static readonly List<DistanceSubscriber> bigSpeed_subscribers = new();
+        public static readonly List<DistanceSubscriber> smallSpeed_subscribers = new();
 
-        internal const float mi_to_m = 1609.34f;
-        internal const float km_to_m = 1000f;
-        internal const float nm_to_m = 1852f;
-        internal const float m_to_ft = 3.28084f;
-        internal const float mi_to_km = 1.60934f;
-        internal const float nm_to_km = 1.852f;
-        internal const float nm_to_mi = 1.15078f;
-        internal const float mps_to_fpm = 196.850394f;
-        internal const float mps_to_kph = 3.6f;
-        internal const float mps_to_mph = 2.23694f;
-        internal const float mps_to_knt = 1.94384f;
+        public const float mi_to_m = 1609.34f;
+        public const float km_to_m = 1000f;
+        public const float nm_to_m = 1852f;
+        public const float m_to_ft = 3.28084f;
+        public const float mi_to_km = 1.60934f;
+        public const float nm_to_km = 1.852f;
+        public const float nm_to_mi = 1.15078f;
+        public const float mps_to_fpm = 196.850394f;
+        public const float mps_to_kph = 3.6f;
+        public const float mps_to_mph = 2.23694f;
+        public const float mps_to_knt = 1.94384f;
 
-        internal static class Units {
-            
+        public static class Units {
 
-            internal static (float value, string suffix) GetBigDistance(float meters, UnitSystem unit) => unit switch {
+
+            public static (float value, string suffix) GetBigDistance(float meters, UnitSystem unit) => unit switch {
                 UnitSystem.StatuteMiles => (meters / mi_to_m, "mi"),
                 UnitSystem.Kilometers => (meters / km_to_m, "km"),
                 UnitSystem.NauticalMiles => (meters / nm_to_m, "nm"),
                 _ => (meters / km_to_m, "km"),
             };
-            internal static (float value, string suffix) GetSmallDistance(float meters, UnitSystem unit) {
+            public static (float value, string suffix) GetSmallDistance(float meters, UnitSystem unit) {
                 return unit switch {
                     UnitSystem.StatuteMiles => (meters * m_to_ft, "ft"),
                     UnitSystem.Kilometers => (meters, "m"),
@@ -43,7 +43,7 @@
                 };
             }
 
-            internal static (float value, string suffix) GetSmallSpeed(float mps, UnitSystem unit) => unit switch {
+            public static (float value, string suffix) GetSmallSpeed(float mps, UnitSystem unit) => unit switch {
                 UnitSystem.Kilometers => (mps, "mps"),
                 UnitSystem.StatuteMiles => (mps * m_to_ft * 60f, "fpm"),
                 UnitSystem.NauticalMiles => (mps * m_to_ft * 60f, "fpm"),
@@ -51,7 +51,7 @@
             };
         }
 
-        internal static string BigDistanceToString(float distanceInMeters, int digits = 0, bool remove_suffix = false) {
+        public static string BigDistanceToString(float distanceInMeters, int digits = 0, bool remove_suffix = false) {
             var (value, suffix) = Units.GetBigDistance(distanceInMeters, CurrentUnit);
             if(remove_suffix) {
                 return $"{value.ToString($"F{digits}")}";
@@ -60,7 +60,7 @@
             }
         }
 
-        internal static string SmallSpeedToString(float speedInMps, int digits = 0, bool remove_suffix = false) {
+        public static string SmallSpeedToString(float speedInMps, int digits = 0, bool remove_suffix = false) {
             var (value, suffix) = Units.GetSmallSpeed(speedInMps, CurrentUnit);
             if(remove_suffix) {
                 return $"{value.ToString($"F{digits}")}";
@@ -69,7 +69,7 @@
             }
         }
 
-        internal static string RadToString(float rad, int digits = 0, bool remove_suffix = false) {
+        public static string RadToString(float rad, int digits = 0, bool remove_suffix = false) {
             float deg = rad * Geomath.Rad2Deg;
             string format = $"F{digits}";
             if(remove_suffix) {
@@ -79,7 +79,7 @@
             }
         }
 
-        internal static string SmallDistanceToString(float altitudeInMeters, int digits = 0, bool remove_suffix = false) {
+        public static string SmallDistanceToString(float altitudeInMeters, int digits = 0, bool remove_suffix = false) {
             var (value, suffix) = Units.GetSmallDistance(altitudeInMeters, CurrentUnit);
             if(remove_suffix) {
                 return $"{value.ToString($"F{digits}")}";
@@ -88,7 +88,7 @@
             }
         }
 
-        internal static void ChangeUnit(UnitSystem newUnit) {
+        public static void ChangeUnit(UnitSystem newUnit) {
             var previousUnit = CurrentUnit;
             if(previousUnit == newUnit)
                 return;
@@ -149,7 +149,7 @@
             foreach(var subscriber in smallSpeed_subscribers)
                 subscriber(converter);
         }
-        internal class VariableUnitBigDistance {
+        public class VariableUnitBigDistance {
             public float distance;
             public VariableUnitBigDistance() {
                 // Subscribe: when the unit changes, apply the conversion
@@ -174,7 +174,7 @@
                 };
             }
         }
-        internal class VariableUnitSmallDistance {
+        public class VariableUnitSmallDistance {
             public float distance;
 
             public VariableUnitSmallDistance() {
@@ -196,7 +196,7 @@
                 };
             }
         }
-        internal class VariableUnitBigSpeed {
+        public class VariableUnitBigSpeed {
             public float speed;
             public VariableUnitBigSpeed() {
                 // Subscribe: when the unit changes, apply the conversion
@@ -221,7 +221,7 @@
                 };
             }
         }
-        internal class VariableUnitSmallSpeed {
+        public class VariableUnitSmallSpeed {
             public float speed;
             public VariableUnitSmallSpeed() {
                 // Subscribe: when the unit changes, apply the conversion

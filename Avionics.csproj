@@ -47,6 +47,9 @@
     <Reference Include="ModMenu">
       <HintPath>..\..\..\..\Program Files\Kitten Space Agency\Content\Avionics\ModMenu.Attributes.dll</HintPath>
     </Reference>
+    <Reference Include="ModMenu.Attributes">
+      <HintPath>ModMenu.Attributes.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

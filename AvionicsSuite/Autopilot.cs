@@ -2,9 +2,9 @@
 using KSA;
 
 namespace Avionics {
-    internal class Autopilot {
-        internal bool engaged = false;
-        private Vehicle vehicle;
+    public class Autopilot {
+        public bool engaged = false;
+        public Vehicle vehicle;
 
         public Autopilot(Vehicle vehicle) {
             this.vehicle = vehicle;

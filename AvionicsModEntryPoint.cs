@@ -1,5 +1,4 @@
-﻿using Avionics.Windows;
-using Brutal.ImGuiApi;
+﻿using Brutal.ImGuiApi;
 using KSA;
 using ModMenu;
 using StarMap.API;
@@ -49,6 +48,8 @@ namespace Avionics {
                     FlightInstruments.hiPageOn = !FlightInstruments.hiPageOn;
                 if(ImGui.MenuItem("Turn Indicator"))
                     FlightInstruments.tiPageOn = !FlightInstruments.tiPageOn;
+                if(ImGui.MenuItem("Artificial Horizion"))
+                    FlightInstruments.aiPageOn = !FlightInstruments.aiPageOn;
                 ImGui.EndMenu();
             }
         }

@@ -103,8 +103,6 @@ namespace Avionics {
             }
             return best_airport;
         }
-
-
         public static double GetHeading(Vehicle vehicle) {
 
             return GetSurfaceAttitude(vehicle).Z;
@@ -120,7 +118,7 @@ namespace Avionics {
             return $"{GetHeadingDeg(heading).ToString(format)}°";
         }
         public static double3 GetSurfaceAttitude(Vehicle vehicle) {
-            if (vehicle == null) return new double3(0.0, 0.0, 0.0);
+            if(vehicle == null) return new double3(0.0, 0.0, 0.0);
 
             double3 Body2Cci = vehicle.GetBody2Cci().ToRollYawPitchRadians();
 

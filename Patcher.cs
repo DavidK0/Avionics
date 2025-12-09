@@ -4,7 +4,7 @@ using KSA;
 namespace Avionics {
     [HarmonyPatch]
     internal static class Patcher {
-        private static Harmony? _harmony = new Harmony("Avionics");
+        public static Harmony? _harmony = new Harmony("Avionics");
 
         public static void Patch() {
             Console.WriteLine("Patching Avionics...");

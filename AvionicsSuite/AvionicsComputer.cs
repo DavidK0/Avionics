@@ -1,5 +1,6 @@
 ﻿using Brutal.Numerics;
 using KSA;
+using System.Drawing;
 using static Avionics.FlightManagementSystem;
 
 namespace Avionics {
@@ -34,7 +35,7 @@ namespace Avionics {
         public double3 PrevVelCci;
 
         // Target info for runway approach
-        public double3? targetGPS;
+        //public double3? targetGPS;
 
         public AvionicsComputer(Vehicle vehicle) {
             this.vehicle = vehicle;
@@ -62,10 +63,13 @@ namespace Avionics {
             navSystem.Update(pos_GPS, snapshot, (float)vehicle.Parent.MeanRadius);
 
             // Flight director update
-            fd.Update(vehicle, dt, navSystem);
+            fd.Update(vehicle, dt, this);
 
             // Autopilot update
             autopilot.Update(fd);
+
+            // Debug gizmos
+            DrawDebugGizmos();
         }
         public void UpdateVehicleStateFromSensors(Vehicle vehicle) {
             pos_GPS = Geomath.GetGPSPosition(vehicle);
@@ -149,6 +153,158 @@ namespace Avionics {
 
             // 6) Normalized slip-ball deflection (≈ -1 .. +1)
             slipDeflection = (float)(gAppBody.Y / gMag);
+        }
+
+        public void DrawDebugGizmos() {
+            if(fms.ActivePlan.ActiveLeg == null) return;
+            Astronomical parent = (KSA.Astronomical)vehicle.Orbit.Parent;
+            if(vehicle.Orbit.Parent is Celestial) {
+                Celestial celestial = (Celestial)vehicle.Orbit.Parent;
+
+                // if the fms has a target, draw a line to it
+                if(fms.ActivePlan.ActiveLeg.Type == LegType.TrackToFix) {
+                    double3 from_posEgo = Geomath.GPSToEGO(fms.ActivePlan.ActiveLeg.From.Gps, celestial, Program.GetMainCamera());
+                    double3 to_posEgo = Geomath.GPSToEGO(fms.ActivePlan.ActiveLeg.To.Gps, celestial, Program.GetMainCamera());
+                    Program.GizmosRenderer.DrawLine(
+                        from_posEgo,
+                        to_posEgo,
+                        float4.One
+                    );
+                } else if(fms.ActivePlan.ActiveLeg.Type == LegType.DirectToFix) {
+                    double3 from_posEgo = Geomath.GPSToEGO(pos_GPS, celestial, Program.GetMainCamera());
+                    double3 to_posEgo = Geomath.GPSToEGO(fms.ActivePlan.ActiveLeg.To.Gps, celestial, Program.GetMainCamera());
+                    Program.GizmosRenderer.DrawLine(
+                        from_posEgo,
+                        to_posEgo,
+                        float4.One
+                    );
+                } else if (fms.ActivePlan.ActiveLeg.Type == LegType.CourseToFix) {
+                    // Draw a great-circle arc starting at the active-leg TO waypoint and going halfway around the planet.
+                    {
+                        if(fms?.ActivePlan?.ActiveLeg?.To == null || fms?.ActivePlan?.ActiveLeg?.CourseRad == null) return;
+
+                        var cam = Program.GetMainCamera();
+
+                        // "To" point (lat, lon in radians; alt in meters)
+                        double3 toGps = fms.ActivePlan.ActiveLeg.To.Gps;
+
+                        // Arc settings
+                        const int segments = 128;
+
+                        // Start point on unit sphere (ECEF-like: x east-ish, y north-ish, z up/north pole)
+                        double3 toUnit = UnitFromGps(toGps);
+
+                        // Desired heading at "to" point (radians)
+                        float greatCircleHeading = fms.ActivePlan.ActiveLeg.CourseRad.Value;
+
+                        // IMPORTANT: ensure the heading is radians.
+                        // If GetTrueHeading() returns degrees, uncomment the next line and remove the one above:
+                        // greatCircleHeading = Geomath.Deg2Rad * fms.ActivePlan.ActiveLeg.AssociatedRunway.GetTrueHeading();
+
+                        double sinLat = Math.Sin(toGps.X);
+                        double cosLat = Math.Cos(toGps.X);
+                        double sinLon = Math.Sin(toGps.Y);
+                        double cosLon = Math.Cos(toGps.Y);
+
+                        // East (unit) and North (unit) in the same frame as UnitFromGps()
+                        double3 east = new double3(-sinLon, cosLon, 0.0);
+                        double3 north = new double3(-sinLat * cosLon, -sinLat * sinLon, cosLat);
+
+                        // Convert heading (bearing from north, clockwise) to a unit tangent direction
+                        double ch = Math.Cos(greatCircleHeading);
+                        double sh = Math.Sin(greatCircleHeading);
+
+                        // Tangent direction along the desired great-circle
+                        double3 t = Normalize(new double3(
+                            north.X * ch + east.X * sh,
+                            north.Y * ch + east.Y * sh,
+                            north.Z * ch + east.Z * sh
+                        ));
+
+                        // If something went weird, fall back to "east"
+                        if(LengthSq(t) < 1e-20) t = Normalize(east);
+
+                        // Great-circle plane normal (ensures Cross(n, toUnit) == t)
+                        double3 n = Normalize(Cross(toUnit, t));
+
+                        // Re-orthonormalize (optional but tidy)
+                        t = -Normalize(Cross(n, toUnit));
+
+                        // March theta from 0..pi (halfway around planet) and draw segments
+                        double3 prevEgo = default;
+                        bool hasPrev = false;
+
+                        for(int i = 0; i <= segments; i++) {
+                            double theta = Math.PI * (double)i / (double)segments;
+
+                            // Point on unit sphere along the great-circle:
+                            // u(theta) = toUnit*cos(theta) + t*sin(theta)
+                            double c = Math.Cos(theta);
+                            double s = Math.Sin(theta);
+                            double3 u = new double3(
+                                toUnit.X * c + t.X * s,
+                                toUnit.Y * c + t.Y * s,
+                                toUnit.Z * c + t.Z * s
+                            );
+
+                            // Convert back to (lat, lon, alt)
+                            double lat = Math.Asin(Clamp(u.Z, -1.0, 1.0));
+                            double lon = Math.Atan2(u.Y, u.X);
+                            double3 gps = new double3(lat, lon, fms.ActivePlan.ActiveLeg.To.Gps.Z + 6371000.0);
+
+                            // Calculate this distance in meters from (to.X, to.Y) to (gps.X, gps.Y)
+                            double3 tempPos = new double3(fms.ActivePlan.ActiveLeg.To.Gps.X, fms.ActivePlan.ActiveLeg.To.Gps.Y, fms.ActivePlan.ActiveLeg.To.Gps.Z + 6371000.0);
+                            double distance = Geomath.GetDistance(tempPos, gps);
+                            float targetSlope_deg = 3.0f; // typical glideslope angle
+                            float targetSlope_rad = Geomath.Deg2Rad * targetSlope_deg;
+                            gps = new double3(lat, lon, fms.ActivePlan.ActiveLeg.To.Gps.Z + distance * Math.Tan(targetSlope_rad));
+
+                            // GPS -> EGO and draw
+                            double3 ego = Geomath.GPSToEGO(gps, celestial, cam);
+
+                            if(hasPrev) {
+                                Program.GizmosRenderer.DrawLine(prevEgo, ego, float4.One);
+                            }
+
+                            prevEgo = ego;
+                            hasPrev = true;
+                        }
+                    }
+
+                    // ---- helpers ----
+
+                    static double3 UnitFromGps(double3 gps) {
+                        double lat = gps.X;
+                        double lon = gps.Y;
+                        double clat = Math.Cos(lat);
+                        return new double3(
+                            clat * Math.Cos(lon),
+                            clat * Math.Sin(lon),
+                            Math.Sin(lat)
+                        );
+                    }
+
+                    static double3 Cross(double3 a, double3 b) {
+                        return new double3(
+                            a.Y * b.Z - a.Z * b.Y,
+                            a.Z * b.X - a.X * b.Z,
+                            a.X * b.Y - a.Y * b.X
+                        );
+                    }
+
+                    static double LengthSq(double3 v) => v.X * v.X + v.Y * v.Y + v.Z * v.Z;
+
+                    static double3 Normalize(double3 v) {
+                        double ls = LengthSq(v);
+                        if(ls <= 0.0) return new double3(0.0, 0.0, 0.0);
+                        double inv = 1.0 / Math.Sqrt(ls);
+                        return new double3(v.X * inv, v.Y * inv, v.Z * inv);
+                    }
+
+                    static double Clamp(double x, double lo, double hi) => (x < lo) ? lo : (x > hi) ? hi : x;
+
+                }
+            }
         }
     }
 }

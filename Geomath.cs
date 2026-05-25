@@ -1,5 +1,6 @@
 ﻿using Brutal.Numerics;
 using KSA;
+using System.Drawing;
 
 namespace Avionics {
     internal class Geomath {
@@ -10,7 +11,7 @@ namespace Avionics {
         public static double3 GetGPSPosition(Vehicle vehicle) {
             if(vehicle == null) return new double3(0.0, 0.0, 0.0);
 
-            Astronomical parent = vehicle.Orbit.Parent;
+            Astronomical parent = (KSA.Astronomical)vehicle.Orbit.Parent;
             if(vehicle.Orbit.Parent is not Celestial) return new double3(0.0, 0.0, 0.0);
             Celestial celestial = (Celestial)vehicle.Orbit.Parent;
             double3 surface_position = celestial.GetCci2Ccf() * vehicle.GetPositionCci();
@@ -27,18 +28,26 @@ namespace Avionics {
 
             return new double3(latitude, longitude, altitude);
         }
-        public static string GetGPSPositionString(double3 GPSPos) {
-            // Convert to degrees
-            double latitude_deg = GPSPos[0] * (180.0 / Math.PI);
-            double longitude_deg = GPSPos[1] * (180.0 / Math.PI);
+        // Converts GPS position to camera coordinates
+        public static double3 GPSToEGO(double3 gps, Celestial celestial, Camera camera) {
+            // GPS -> CCF
+            double r = celestial.MeanRadius + gps.Z;
+            double3 posCcf = new double3(
+                r * Math.Cos(gps.X) * Math.Cos(gps.Y),
+                r * Math.Cos(gps.X) * Math.Sin(gps.Y),
+                r * Math.Sin(gps.X)
+            );
 
-            // Convert to string and append N/S, E/W
-            string lat_hemisphere = latitude_deg >= 0 ? "N" : "S";
-            string lon_hemisphere = longitude_deg >= 0 ? "E" : "W";
-            string lat_str = $"{Math.Abs(latitude_deg):F4}° {lat_hemisphere}";
-            string lon_str = $"{Math.Abs(longitude_deg):F4}° {lon_hemisphere}";
+            // CCF -> CCE
+            //double3 posCce = posCcf.Transform(celestial.GetCcf2Cce());
 
-            return $"{lat_str}, {lon_str}";
+            // CCE -> ECL
+            double3 posEcl = celestial.GetPositionEcl();
+
+            // ECL -> EGO
+            double3 posEgo = camera.EclToEgo(posEcl);
+
+            return posEgo;
         }
         public static double GetBearing(double3 GPSPos1, double3 GPSPos2) {
             double lat1 = GPSPos1[0];
@@ -63,28 +72,41 @@ namespace Avionics {
             return bearing;
         }
 
-        public static string GetBearingString(double bearing_rad) {
-            // Convert to degrees
-            double bearing_deg = bearing_rad * (180.0f / Math.PI);
-            return UnitController.RadToString((float)bearing_rad);
-        }
+        public static double GetDistance(double3 pos1, double3 pos2) {
+            // pos[0] = latitude (radians), pos[1] = longitude (radians), pos[2] = altitude (same distance unit you want out)
 
-        public static double GetDistance(double3 pos1, double3 pos2, double radius) {
-            double dLat = pos2[0] - pos1[0];
-            double dLon = pos2[1] - pos1[1];
+            double lat1 = pos1[0];
+            double lon1 = pos1[1];
+            double h1 = pos1[2];
+
+            double lat2 = pos2[0];
+            double lon2 = pos2[1];
+            double h2 = pos2[2];
+
+            // Haversine central angle (unit sphere)
+            double dLat = lat2 - lat1;
+            double dLon = lon2 - lon1;
 
             double sinLat = Math.Sin(dLat * 0.5);
             double sinLon = Math.Sin(dLon * 0.5);
 
             double a =
                 sinLat * sinLat +
-                Math.Cos(pos1[0]) * Math.Cos(pos2[0]) *
+                Math.Cos(lat1) * Math.Cos(lat2) *
                 sinLon * sinLon;
+
+            // Clamp to protect against tiny floating-point overshoots
+            a = Math.Min(1.0, Math.Max(0.0, a));
 
             double c = 2.0 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1.0 - a));
 
-            return radius * c;   // arc length
+            // Use the mean of the two radii (base radius + altitude) as the effective radius.
+            double effectiveRadius = 0.5 * (h1 + h2);
+
+            //Console.WriteLine($"{effectiveRadius * c}, {h1}, {h2}");
+            return effectiveRadius * c; // arc length along the surface at the average altitude
         }
+
 
         public static Airport GetNearestAirport(double3 GPSPos, List<Airport> airports) {
             double best_dist = double.MaxValue;
@@ -94,7 +116,7 @@ namespace Avionics {
                     double airport_lat_rad = Deg2Rad * airport.Latitude_deg;
                     double airport_lon_rad = Deg2Rad * airport.longitude_deg;
                     double3 airportGPS = new double3(airport_lat_rad, airport_lon_rad, 0.0);
-                    double distance = GetDistance(GPSPos, airportGPS, 1.0); // actual radius does not matter for ranking distances
+                    double distance = GetDistance(GPSPos, airportGPS);
                     if(distance < best_dist) {
                         best_dist = distance;
                         best_airport = airport;
@@ -112,10 +134,6 @@ namespace Avionics {
             deg %= 360.0;
             if(deg < 0) deg += 360.0;
             return deg;
-        }
-        public static string GetHeadingString(double heading, int decimals = 2) {
-            string format = "F" + decimals;
-            return $"{GetHeadingDeg(heading).ToString(format)}°";
         }
         public static double3 GetSurfaceAttitude(Vehicle vehicle) {
             if(vehicle == null) return new double3(0.0, 0.0, 0.0);

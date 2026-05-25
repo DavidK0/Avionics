@@ -7,7 +7,11 @@ namespace Avionics {
         public double longitude_deg { get; set; }
         public double Latitude_deg { get; set; }
         public List<Runway> Runways { get; set; }
-
+        public double3 GetGPS() {
+            double longitude_rad = longitude_deg * Geomath.Rad2Deg;
+            double latitude_rad = Latitude_deg * Geomath.Rad2Deg;
+            return new double3(latitude_rad, longitude_rad, 6371000);
+        }
     }
 
     public class Runway {
@@ -27,10 +31,11 @@ namespace Avionics {
         public bool Use_LE { get; set; }
         public double glideSlopeRad { get; set; }
         public double3 GetGPS() {
+            double earth_radius_m = 0;// 6371000.0;
             if(Use_LE) {
-                return new double3(Le_Latitude_rad, Le_Longitude_rad, Le_Elevation_m);
+                return new double3(Le_Latitude_rad, Le_Longitude_rad, Le_Elevation_m + earth_radius_m);
             } else {
-                return new double3(He_Latitude_rad, He_Longitude_rad, He_Elevation_m);
+                return new double3(He_Latitude_rad, He_Longitude_rad, He_Elevation_m + earth_radius_m);
             }
         }
         public string GetDescription() {
@@ -63,7 +68,7 @@ namespace Avionics {
             double3 aircraftPos = new double3(aircraftLat_rad, aircraftLon_rad, aircraftAlt_m);
             double3 runwayPos = new double3(rwLat_rad, rwLon_rad, rwAlt_m);
 
-            double horizontal_m = Geomath.GetDistance(aircraftPos, runwayPos, radius);
+            double horizontal_m = Geomath.GetDistance(aircraftPos, runwayPos);
 
             // Vertical difference: aircraft altitude above runway threshold
             double deltaAlt_m = aircraftAlt_m - rwAlt_m;
@@ -103,7 +108,7 @@ namespace Avionics {
 
             // Angular distance between runway point (1) and aircraft point (3)
             // GetDistance returns arc length, so divide by radius to get central angle d13
-            double d13 = Geomath.GetDistance(runway_gps, GPSPos, radius) / radius;
+            double d13 = Geomath.GetDistance(runway_gps, GPSPos) / radius;
 
             // Initial bearing from runway point (1) to aircraft point (3) -> θ13
             double theta13 = Geomath.GetBearing(runway_gps, GPSPos);   // radians
@@ -121,7 +126,7 @@ namespace Avionics {
         }
         public double GetVerticalDeviation_dist(double3 GPSPos, double radius) {
             double vertical_angle = GetCurrentVerticalAngle(GPSPos, radius);
-            double base_dist = Math.Cos(vertical_angle) * Geomath.GetDistance(GPSPos, GetGPS(), radius);
+            double base_dist = Math.Cos(vertical_angle) * Geomath.GetDistance(GPSPos, GetGPS());
             double correct_rise = Math.Tan(glideSlopeRad) * base_dist;
             double current_rise = GPSPos.Z;
             return current_rise - correct_rise;

@@ -65,6 +65,9 @@ namespace Avionics {
             public float? AtOrAboveAltMsl;
             public float? AtOrBelowAltMsl;
             public float? SpeedLimit;
+
+            // Used for CourseToFix (and can later be reused for holds, etc.).
+            public float? CourseRad;
         }
         public static List<Airport> airports;
 
@@ -157,9 +160,9 @@ namespace Avionics {
                     break;
 
                 case LegType.CourseToFix:
-                    // You probably want an explicit "course" field on FlightPlanLeg at some point.
-                    // For now, derive a nominal course from From -> To.
-                    lateral.DesiredTrackRad = (float)Geomath.GetBearing(leg.From.Gps, leg.To.Gps);
+                    // Fly inbound on a specific course to the TO fix.
+                    // Use the explicit course on the leg
+                    lateral.DesiredTrackRad = leg.CourseRad ?? 0f;
                     break;
 
                 case LegType.ArcToFix:

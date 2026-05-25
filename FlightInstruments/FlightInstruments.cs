@@ -32,14 +32,13 @@ namespace Avionics{
                 ImGui.Begin("Horizontal Situation Indicator", ref hsiPageOn, flags);
                 unsafe {
                     ImDrawList* draw_list = ImGui.GetWindowDrawList();
-                    ImDrawList* draw_list1 = draw_list;
                     float2 center = ImGui.GetWindowPos();
                     float2 size = ImGui.GetWindowSize();
 
                     NavigationSystem.NavSolution sol = vehicleAvioniceComputer.navSystem.Current;
 
                     HorizontalSituationIndicator.Update(vehicleAvioniceComputer.heading, sol.DesiredTrack_rad, new float2(sol.CrossTrackError_rad, sol.VerticalPathError_rad), sol.BearingToTarget_rad, (float?)sol.DistanceToTarget_m, sol.DesiredPathSlope_rad);
-                    HorizontalSituationIndicator.Render(draw_list, center, size);
+                    HorizontalSituationIndicator.Render();
                 }
                 ImGui.End();
             }
@@ -51,12 +50,11 @@ namespace Avionics{
                 ImGui.Begin("Vertical Speed Indicator", ref vsiPageOn, flags);
                 unsafe {
                     ImDrawList* draw_list = ImGui.GetWindowDrawList();
-                    ImDrawList* draw_list1 = draw_list;
                     float2 center = ImGui.GetWindowPos();
                     float2 size = ImGui.GetWindowSize();
 
                     VerticalSpeedIndicator.Update(vehicleAvioniceComputer.verticalSpeed_mps);
-                    VerticalSpeedIndicator.Render(draw_list, center, size);
+                    VerticalSpeedIndicator.Render();
                 }
                 ImGui.End();
             }
@@ -68,12 +66,11 @@ namespace Avionics{
                 ImGui.Begin("Radar Altimeter", ref raPageOn, flags);
                 unsafe {
                     ImDrawList* draw_list = ImGui.GetWindowDrawList();
-                    ImDrawList* draw_list1 = draw_list;
                     float2 center = ImGui.GetWindowPos();
                     float2 size = ImGui.GetWindowSize();
 
                     RadarAltimeter.Update((float)vehicleAvioniceComputer.radarAltitude);
-                    RadarAltimeter.Render(draw_list, center, size);
+                    RadarAltimeter.Render();
                 }
                 ImGui.End();
             }
@@ -86,12 +83,11 @@ namespace Avionics{
                 ImGui.Begin("Airspeed Indicator", ref asiPageOn, flags);
                 unsafe {
                     ImDrawList* draw_list = ImGui.GetWindowDrawList();
-                    ImDrawList* draw_list1 = draw_list;
                     float2 center = ImGui.GetWindowPos();
                     float2 size = ImGui.GetWindowSize();
 
                     AirspeedIndicator.Update((float)vehicleAvioniceComputer.indicatedAirspeed_mps);
-                    AirspeedIndicator.Render(draw_list, center, size);
+                    AirspeedIndicator.Render();
                 }
                 ImGui.End();
             }
@@ -107,7 +103,7 @@ namespace Avionics{
                     float2 size = ImGui.GetWindowSize();
 
                     HeadingIndicator.Update(vehicleAvioniceComputer.heading);
-                    HeadingIndicator.Render(draw_list, center, size);
+                    HeadingIndicator.Render();
                 }
                 ImGui.End();
             }
@@ -118,12 +114,8 @@ namespace Avionics{
                 ImGui.SetNextWindowSizeConstraints(minWindowSize, new float2(float.MaxValue, float.MaxValue));
                 ImGui.Begin("Turn Indicator", ref tiPageOn, flags);
                 unsafe {
-                    ImDrawList* draw_list = ImGui.GetWindowDrawList();
-                    float2 center = ImGui.GetWindowPos();
-                    float2 size = ImGui.GetWindowSize();
-
                     TurnIndicator.Update(avioniceComputer.yawRate, avioniceComputer.slipAccelBodyY);
-                    TurnIndicator.Render(draw_list, center, size);
+                    TurnIndicator.Render();
                 }
                 ImGui.End();
             }
@@ -139,7 +131,7 @@ namespace Avionics{
                     float2 size = ImGui.GetWindowSize();
 
                     AttitudeIndicator.Update(avioniceComputer.pitch, avioniceComputer.roll);
-                    AttitudeIndicator.Render(draw_list, center, size);
+                    AttitudeIndicator.Render();
                 }
                 ImGui.End();
             }

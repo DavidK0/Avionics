@@ -36,7 +36,11 @@ namespace Avionics {
             return new float2(center.X + xr, center.Y + yr);
         }
 
-        internal static unsafe void Render(ImDrawList* draw_list, float2 windowPos, float2 size) {
+        internal static unsafe void Render() {
+            ImDrawList* draw_list = ImGui.GetWindowDrawList();
+            float2 windowPos = ImGui.GetWindowPos();
+            float2 size = ImGui.GetWindowSize();
+
             // Center and size
             float radius = Math.Min(size.X, size.Y) * 0.45f;
             float innerRadius = radius * .82f;

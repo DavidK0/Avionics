@@ -37,6 +37,7 @@ namespace Avionics {
 
         public PID vsPID;
         public PID altitudePID;
+        public PID crossTrackPID;
 
         public float commanded_pitch;
         public float commanded_heading;
@@ -48,17 +49,23 @@ namespace Avionics {
         public FlightDirector() {
             vsPID = new PID(0.3f, 0f, 0.5f);
             altitudePID = new PID(0.1f, 0f, 0.2f);
+            crossTrackPID = new PID(0.1f, 0f, 0f);
 
             target_vs_display_value = new UnitController.VariableUnitSmallSpeed();
             target_altitude_display_value = new UnitController.VariableUnitSmallDistance();
         }
 
-        public void Update(Vehicle v, float dt, NavigationSystem navSystem) {
-            if(navSystem == null || v == null) return;
+        public void Update(Vehicle v, float dt, AvionicsComputer avionicsComputer) {
+            if(avionicsComputer == null || v == null) return;
+            NavigationSystem navSystem = avionicsComputer.navSystem;
             NavigationSystem.NavSolution sol = navSystem.Current;
 
             vehicle = v;
             FlightComputer flightComputer = vehicle.FlightComputer;
+
+            // Update autopilot inputs
+            current_vs = avionicsComputer.verticalSpeed_mps;
+            current_altitude = (float)avionicsComputer.pos_GPS.Z;
 
             target_altitude_display_value.distance = MathF.Max(0f, target_altitude_display_value.distance);
 
@@ -130,7 +137,13 @@ namespace Avionics {
             } else if(lateralMode == LateralMode.Nav) {
                 // Nav mode
                 if(sol.HasLateralGuidance) {
-                    commanded_heading = sol.BearingToTarget_rad - (float)Math.PI / 2;
+                    float headingOffset = crossTrackPID.Update(sol.CrossTrackError_m, dt);
+                    headingOffset = Math.Clamp(headingOffset, -0.5f, 0.5f);
+                    //commanded_heading = sol.DesiredTrack_rad - headingOffset;
+                    //commanded_heading += (float)Math.PI / 2;
+                    //commanded_heading = commanded_heading % (float)Math.PI * 2f;
+                    commanded_heading = sol.DesiredTrack_rad - (float)Math.PI / 2 - headingOffset;
+                    Console.WriteLine($"{headingOffset}, {commanded_heading}");
                 } else {
                     lateralMode = LateralMode.off;
                     commanded_heading = (float)Geomath.GetHeading(vehicle);

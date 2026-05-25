@@ -1,6 +1,7 @@
 Improve Autopilot
 * Add more modes (vertical speed hold, approach mode)
 * Add PID tuning options to the settings page
+* Add heading selection
 Improve HSI
 * O/M/I markers
 * Loc/GS capturing
@@ -22,6 +23,7 @@ Improve flight instrument graphics
 * Combine displays into a Multi-Function Display
 Add support for switching aircraft
 Add radio and ATC communications
+Failures
 Airspace
 
 Things I probably won't add unless they become relevant:

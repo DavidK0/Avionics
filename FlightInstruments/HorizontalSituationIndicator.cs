@@ -71,7 +71,11 @@ namespace Avionics {
             nav_bearing = bearing.Value;
             heading = _heading;
         }
-        internal static unsafe void Render(ImDrawList* draw_list, float2 windowPos, float2 size) {
+        internal static unsafe void Render() {
+            ImDrawList* draw_list = ImGui.GetWindowDrawList();
+            float2 windowPos = ImGui.GetWindowPos();
+            float2 size = ImGui.GetWindowSize();
+
             if(!running) {
                 ImDrawListExtensions.AddText(draw_list, new float2(windowPos.X, windowPos.Y + size.Y * 0.5f), new ImColor8(255, 255, 255, 255), "Select an airport and runway first");
                 return;

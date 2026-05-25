@@ -31,10 +31,8 @@ namespace Avionics {
                 }
                 ImGui.EndMenu();
             }
-            if(ImGui.MenuItem("Flight Management System"))
-                FlightManagementSystemWindow.Toggle();
-            if(ImGui.MenuItem("Autopilot"))
-                AutopilotWindow.Toggle();
+            if(ImGui.MenuItem("Flight Systems"))
+                FlightSystems.Toggle();
             if(ImGui.BeginMenu("Flight Instruments")) {
                 if(ImGui.MenuItem("Horizontal Situation Indicator"))
                     FlightInstruments.hsiPageOn = !FlightInstruments.hsiPageOn;
@@ -56,7 +54,8 @@ namespace Avionics {
 
         [StarMapImmediateLoad]
         public void Init(Mod definingMod) {
-            FlightManagementSystem.LoadAirportData("Content/Avionics/airports.json");
+            string userDocs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            FlightManagementSystem.LoadAirportData(Path.Combine(userDocs, "My Games", "Kitten Space Agency", "mods", "Avionics", "airports.json"));
         }
 
         [StarMapAfterGui]
@@ -69,13 +68,10 @@ namespace Avionics {
             // Update avionics computer state
             avionicsComputer.Update((float) dt);
 
-            // Runway selection page
-            FlightManagementSystemWindow.Render(avionicsComputer);
+            // CDU window (FMS, Autopilot)
+            FlightSystems.Render(avionicsComputer);
 
-            // Autopilot page
-            AutopilotWindow.Render(avionicsComputer);
-
-            // HSI, VSI, RA, ASI, HI pages
+            // Flight instruments windows (HSI, ASI, etc.)
             FlightInstruments.RenderFlightInstruments(avionicsComputer);
         }
     }

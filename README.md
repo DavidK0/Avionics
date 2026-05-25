@@ -16,9 +16,9 @@ This mod does *not* add airport models, runways, or airplanes to KSA; it only ad
    2. Run the .exe and follow the instructions
 2. Install [ModMenu](https://github.com/MrJeranimo/ModMenu/)
    1. Download and unzip [the latest release of ModMenu](https://github.com/MrJeranimo/ModMenu/releases/latest)
-   2. Put the contents in `Kitten Space Agency\Content\`
+   2. Put the contents in `Kitten Space Agency\Mods\`
 3. Download and unzip the latest release of Avionics [from Github](https://github.com/DavidK0/Avionics/releases/latest) or [from SpaceDock](https://spacedock.info/mod/4057/Avionics)
-4. Place the contents into `Kitten Space Agency\Content\`. Your content folder should look something like this:
+4. Place the contents into `Kitten Space Agency\Mods\`. Your content folder should look something like this:
 ```
 ├── Core
 ├── Avionics
@@ -32,22 +32,7 @@ This mod does *not* add airport models, runways, or airplanes to KSA; it only ad
 │   ├── mod.toml
 │   └── ModMenu.dll
 ```
-5. Edit the `Manifest.toml` in `My Games\Kitten Space Agency\` to include Avionics and ModMenu. Your final `Manifest.toml` should look something like this:
-```
-[[mods]]
-id = "Core"
-enabled = true
-
-[[mods]]
-id = "Avionics"
-enabled = true
-
-[[mods]]
-id = "ModMenu"
-enabled = true
-```
-
-6. Run KSA through StarMap
+5. Run KSA through StarMap
 
 ## How to use in game
 1. Open the Avionics pages with the 'Avionics' button in the mod menu.

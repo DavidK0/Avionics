@@ -1,16 +1,22 @@
 # Avionics
-Avionics is a mod for Kitten Space Agency that adds airplane flight instruments. The current features are:
+Avionics is a mod for Kitten Space Agency that adds airplane flight instruments.
+
+**Compatible with KSA v2026.5.11.4462**
+
+<img width="456" height="345" alt="Avionics Mod Picture" src="https://github.com/user-attachments/assets/994fec16-fae4-42e1-b510-250949ad8b9e" />
+
+## Features
 * All the basic flight instruments of a steam gauge cockpit
 * An FMS that stores the positions of thousands of airports across the world
 * An autopilot with altitude hold, heading hold, and airport navigation
 
 This mod does *not* add airport models, runways, or airplanes to KSA; it only adds the navigation tools to get to where the airports would be.
 
-**Updated for KSA v2025.12.24.3014**
+## Getting started
 
-<img width="456" height="345" alt="ksa_header" src="https://github.com/user-attachments/assets/994fec16-fae4-42e1-b510-250949ad8b9e" />
-
-## How to install
+<details>
+<summary>How to install</summary>
+   
 1. Install [StarMap](https://github.com/StarMapLoader/StarMap/)
    1. Download and unzip [the latest release of StarMap](https://github.com/StarMapLoader/StarMap/releases/latest)
    2. Run the .exe and follow the instructions
@@ -18,9 +24,8 @@ This mod does *not* add airport models, runways, or airplanes to KSA; it only ad
    1. Download and unzip [the latest release of ModMenu](https://github.com/MrJeranimo/ModMenu/releases/latest)
    2. Put the contents in `Kitten Space Agency\Mods\`
 3. Download and unzip the latest release of Avionics [from Github](https://github.com/DavidK0/Avionics/releases/latest) or [from SpaceDock](https://spacedock.info/mod/4057/Avionics)
-4. Place the contents into `Kitten Space Agency\Mods\`. Your content folder should look something like this:
+4. Place the contents into `Kitten Space Agency\Mods\`. Your mods folder should look something like this:
 ```
-├── Core
 ├── Avionics
 │   ├── Avionics.deps.json
 │   ├── Avionics.dll
@@ -33,14 +38,20 @@ This mod does *not* add airport models, runways, or airplanes to KSA; it only ad
 │   └── ModMenu.dll
 ```
 5. Run KSA through StarMap
+</details>
 
-## How to use in game
+<details>
+<summary>How to use</summary>
+   
 1. Open the Avionics pages with the 'Avionics' button in the mod menu.
 1. Enter the ICAO code of an airport in the FMS, select a runway, and execute the plan
 3. View the directions of your flight plan HSI.
 4. Enable autopilot in the 'Autopilot' window. You must disable the manual mode on the in game autopilot.
+</details>
 
-## Links
+## Community links
 * [Avionics on Ahwoo Forums](https://forums.ahwoo.com/threads/avionics.560/)
 * [Avionics on SpaceDock](https://spacedock.info/mod/4057/Avionics)
 * [Demonstration on Youtube](https://youtu.be/QDrmacfHLlM)
+
+**AI Disclaimer:** This mod was made with the help of AI.
